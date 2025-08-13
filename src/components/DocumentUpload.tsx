@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { FileText, Loader2 } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { UploadButtonShimmer } from "@/components/UploadShimmer";
 
 export const DocumentUpload = ({ onUpload, isLoading, accept = ".pdf,.doc,.docx,.txt" }: { 
   onUpload?: (file: File) => void; 
@@ -95,9 +96,7 @@ export const DocumentUpload = ({ onUpload, isLoading, accept = ".pdf,.doc,.docx,
                 className="relative"
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
-                  </>
+                  <UploadButtonShimmer />
                 ) : (
                   "Select File"
                 )}

@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { 
+import { NewProjectModal } from "@/components/NewProjectModal";
+import { ProjectListSkeleton } from "@/components/ModelCardSkeleton";
+import {
   Plus,
   History,
   Search,
@@ -24,6 +26,7 @@ export interface BaseProject {
   model: string;
   preview: string;
   category: 'traditional' | 'content-generation';
+  section: string; // 'audio', 'text', 'video', etc.
   metadata?: Record<string, any>;
 }
 
@@ -69,6 +72,8 @@ interface AIStudioBaseProps {
   onItemSelect: (item: BaseModel | BaseContentPreset, type: 'traditional' | 'content-generation') => void;
   onNewProject: () => void;
   filterTypes: { value: string; label: string }[];
+  category: string; // 'audio', 'text', 'video', etc.
+  loading?: boolean;
 }
 
 export const AIStudioBase = ({
@@ -83,11 +88,16 @@ export const AIStudioBase = ({
   children,
   onItemSelect,
   onNewProject,
-  filterTypes
+  filterTypes,
+  category,
+  loading = false
 }: AIStudioBaseProps) => {
   // Mobile sidebar state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  
+
+  // New project modal state
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+
   // Project history state
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
@@ -97,7 +107,8 @@ export const AIStudioBase = ({
     const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = filterType === "all" || project.type === filterType;
     const matchesCategory = filterCategory === "all" || project.category === filterCategory;
-    return matchesSearch && matchesType && matchesCategory;
+    const matchesSection = project.section === category;
+    return matchesSearch && matchesType && matchesCategory && matchesSection;
   });
 
   const formatTimestamp = (timestamp: string) => {
@@ -133,7 +144,7 @@ export const AIStudioBase = ({
           </div>
         </div>
         
-        <Button className="w-full gap-2 text-sm" onClick={() => {onNewProject(); onClose?.();}}>
+        <Button className="w-full gap-2 text-sm" onClick={() => {setIsNewProjectModalOpen(true); onClose?.();}}>
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -188,18 +199,20 @@ export const AIStudioBase = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-[calc(100vh-340px)] px-3 lg:px-4">
+        <ScrollArea className="h-[calc(100vh-280px)] px-3 lg:px-4">
+          {loading ? (
+            <ProjectListSkeleton count={5} />
+          ) : (
             <div className="space-y-3 pb-4">
             {filteredProjects.map((project) => {
               const traditionalModel = traditionalModels.find(m => m.key === project.type);
               const contentPreset = contentPresets.find(p => p.id === project.type);
               const item = traditionalModel || contentPreset;
               const Icon = item?.icon || StudioIcon;
-              
+
               return (
-                <Card 
-                  key={project.id} 
+                <Card
+                  key={project.id}
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => onClose?.()}
                 >
@@ -238,16 +251,16 @@ export const AIStudioBase = ({
                 </Card>
               );
             })}
-            
-            {filteredProjects.length === 0 && (
+
+            {filteredProjects.length === 0 && !loading && (
               <div className="text-center py-8">
                 <StudioIcon className="h-8 w-8 lg:h-12 lg:w-12 text-muted-foreground/50 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">No projects found</p>
               </div>
             )}
             </div>
-          </ScrollArea>
-        </div>
+          )}
+        </ScrollArea>
       </div>
     </div>
   );
@@ -290,7 +303,7 @@ export const AIStudioBase = ({
               </div>
             </div>
             <Button
-              onClick={onNewProject}
+              onClick={() => setIsNewProjectModalOpen(true)}
               size="sm"
               variant="outline"
               className="gap-2"
@@ -301,11 +314,22 @@ export const AIStudioBase = ({
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto h-[calc(100vh-64px)]">
             {children}
           </div>
         </div>
       </div>
+
+      {/* New Project Modal */}
+      <NewProjectModal
+        isOpen={isNewProjectModalOpen}
+        onClose={() => setIsNewProjectModalOpen(false)}
+        title={title}
+        traditionalModels={traditionalModels}
+        contentPresets={contentPresets}
+        onModelSelect={(model) => onItemSelect(model, 'traditional')}
+        onPresetSelect={(preset) => onItemSelect(preset, 'content-generation')}
+      />
     </div>
   );
 };

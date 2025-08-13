@@ -1,9 +1,8 @@
-
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { ContentGenerationShimmer } from "@/components/UploadShimmer";
 
 export const TextInput = ({ onSubmit, isLoading }: { onSubmit?: (text: string) => void; isLoading?: boolean }) => {
   const [text, setText] = useState("");
@@ -35,9 +34,7 @@ export const TextInput = ({ onSubmit, isLoading }: { onSubmit?: (text: string) =
               className="bg-primary hover:bg-primary/90"
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
-                </>
+                <ContentGenerationShimmer />
               ) : (
                 "Convert to Speech"
               )}

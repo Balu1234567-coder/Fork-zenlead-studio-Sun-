@@ -1,19 +1,12 @@
 import { useState } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { 
-  Languages, 
-  Headphones, 
-  Wand2, 
-  LucideIcon,
-  Volume2,
-  Mic,
-  AudioWaveform
-} from "lucide-react";
+import { Volume2 } from "lucide-react";
 
-import { AIStudioBase, BaseModel, BaseContentPreset, BaseProject } from "@/components/ai-studio/AIStudioBase";
+import { AIStudioBase } from "@/components/ai-studio/AIStudioBase";
 import { ModelSelectionInterface } from "@/components/ai-studio/ModelSelectionInterface";
 import { ModelPage } from "@/components/ai-studio/ModelPage";
 import { ModelModal } from "@/components/ModelModal";
+import { useAIModels } from "@/hooks/useAIModels";
 
 import AudioTranslate from "@/components/audio-processing/audio-translate";
 import VoiceClone from "@/components/audio-processing/voice-clone";
@@ -30,164 +23,18 @@ export interface AudioProcessingState {
   setIsProcessing: (isProcessing: boolean) => void;
 }
 
-// Traditional audio processing models with paths
-const traditionalModels: BaseModel[] = [
-  {
-    key: "translate",
-    title: "Audio Translation",
-    titletagline: "Multilingual voice conversion",
-    description: "Translate audio into 20+ languages while preserving the original voice's emotion, tone, and speaking style for authentic cross-language communication.",
-    modelName: "AudioTrans",
-    modelkeywords: ["Audio Translation", "Multilingual"],
-    sucessrate: 97,
-    processingspeed: "Fast",
-    icon: Languages,
-    color: "from-blue-500 to-blue-600",
-    bgColor: "bg-blue-50 dark:bg-blue-950/20",
-    badge: "Popular",
-    category: 'traditional',
-    path: "/translate"
-  },
-  {
-    key: "clone",
-    title: "Voice Cloning",
-    titletagline: "AI-powered voice replication",
-    description: "Create an accurate digital clone of any voice from just a few audio samples. Perfect for content creation, personalization, and accessibility.",
-    modelName: "VoiceReplicator",
-    modelkeywords: ["Voice Cloning", "AI Voice"],
-    sucessrate: 94,
-    processingspeed: "Moderate",
-    icon: Headphones,
-    color: "from-purple-500 to-purple-600",
-    bgColor: "bg-purple-50 dark:bg-purple-950/20",
-    badge: "AI Powered",
-    category: 'traditional',
-    path: "/clone"
-  },
-  {
-    key: "enhance",
-    title: "Audio Enhancement",
-    titletagline: "Professional audio cleanup",
-    description: "Transform low-quality audio into crystal-clear recordings with advanced noise reduction, echo removal, and clarity enhancement algorithms.",
-    modelName: "AudioClear",
-    modelkeywords: ["Audio Enhancement", "Noise Reduction"],
-    sucessrate: 92,
-    processingspeed: "Fast",
-    icon: Wand2,
-    color: "from-green-500 to-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950/20",
-    badge: "Pro Tools",
-    category: 'traditional',
-    path: "/enhance"
-  },
-];
-
-// Content generation presets with paths
-const audioContentPresets: BaseContentPreset[] = [
-  {
-    id: 'podcast',
-    title: 'Podcast Episode',
-    description: 'Create engaging podcast episodes with intro music, chapters, and professional editing',
-    icon: Mic,
-    color: 'from-blue-500 to-blue-600',
-    bgColor: 'bg-blue-50 dark:bg-blue-950/20',
-    estimatedTime: '20-45 minutes',
-    features: ['Intro/Outro Music', 'Chapter Markers', 'Noise Reduction', 'Auto-leveling', 'Show Notes'],
-    path: "/podcast"
-  },
-  {
-    id: 'music',
-    title: 'Music Track',
-    description: 'Generate original music tracks with AI composition and professional mixing',
-    icon: AudioWaveform,
-    color: 'from-purple-500 to-purple-600',
-    bgColor: 'bg-purple-50 dark:bg-purple-950/20',
-    estimatedTime: '10-25 minutes',
-    features: ['AI Composition', 'Genre Styling', 'Professional Mixing', 'Multiple Instruments', 'Mastering'],
-    path: "/music"
-  },
-  {
-    id: 'voiceover',
-    title: 'Professional Voiceover',
-    description: 'Create professional voiceovers with natural AI voices and script optimization',
-    icon: Volume2,
-    color: 'from-orange-500 to-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950/20',
-    estimatedTime: '5-15 minutes',
-    features: ['AI Voice Selection', 'Script Optimization', 'Emotion Control', 'Background Music', 'Export Ready'],
-    path: "/voiceover"
-  }
-];
-
-const mockProjects: BaseProject[] = [
-  {
-    id: '1',
-    title: 'Marketing Podcast Episode',
-    type: 'podcast',
-    timestamp: '2024-01-15T10:30:00Z',
-    status: 'completed',
-    model: 'PodcastPro',
-    preview: 'Weekly marketing insights podcast with intro music and chapter markers...',
-    category: 'content-generation',
-    metadata: { duration: '32:45' }
-  },
-  {
-    id: '2',
-    title: 'French Audio Translation',
-    type: 'translate',
-    timestamp: '2024-01-14T14:20:00Z',
-    status: 'completed',
-    model: 'AudioTrans',
-    preview: 'Translated product demo from English to French preserving speaker tone...',
-    category: 'traditional',
-    metadata: { duration: '8:30' }
-  },
-  {
-    id: '3',
-    title: 'CEO Voice Clone',
-    type: 'clone',
-    timestamp: '2024-01-13T09:15:00Z',
-    status: 'completed',
-    model: 'VoiceReplicator',
-    preview: 'Created AI voice clone for automated company announcements...',
-    category: 'traditional',
-    metadata: { duration: '5:20' }
-  },
-  {
-    id: '4',
-    title: 'Background Music Track',
-    type: 'music',
-    timestamp: '2024-01-13T09:15:00Z',
-    status: 'processing',
-    model: 'MusicAI',
-    preview: 'Upbeat electronic track for product video background...',
-    category: 'content-generation'
-  },
-  {
-    id: '5',
-    title: 'Interview Audio Enhancement',
-    type: 'enhance',
-    timestamp: '2024-01-12T16:30:00Z',
-    status: 'completed',
-    model: 'AudioClear',
-    preview: 'Enhanced remote interview recording with noise reduction and clarity...',
-    category: 'traditional',
-    metadata: { duration: '45:12' }
-  }
-];
-
-const filterTypes = [
-  { value: "translate", label: "Translation" },
-  { value: "clone", label: "Voice Clone" },
-  { value: "enhance", label: "Enhancement" },
-  { value: "podcast", label: "Podcast" },
-  { value: "music", label: "Music" },
-  { value: "voiceover", label: "Voiceover" },
-];
-
 const AudioProcessing = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Fetch audio models from API
+  const { 
+    models: traditionalModels, 
+    contentPresets: audioContentPresets, 
+    projects, 
+    loading, 
+    error 
+  } = useAIModels('audio');
 
   // Traditional model state - persistent settings
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -204,22 +51,27 @@ const AudioProcessing = () => {
     selectedVoice, setSelectedVoice, isProcessing, setIsProcessing,
   };
 
-  const lockedTabs = {
-    translate: true,
-    clone: true,
-    enhance: true,
-  };
+  // Create filter types from available models
+  const filterTypes = traditionalModels.map(model => ({
+    value: model.key,
+    label: model.title.replace('Audio ', '').replace(' Audio', '')
+  }));
+
+  const lockedTabs = traditionalModels.reduce((acc, model) => {
+    acc[model.key] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
 
   const handleNewProject = () => {
     navigate('/audio');
   };
 
-  const handleItemSelect = (item: BaseModel | BaseContentPreset, type: 'traditional' | 'content-generation') => {
+  const handleItemSelect = (item: any, type: 'traditional' | 'content-generation') => {
     if (type === 'traditional') {
-      const model = item as BaseModel;
+      const model = item;
       navigate(`/audio${model.path}`);
     } else {
-      const preset = item as BaseContentPreset;
+      const preset = item;
       navigate(`/audio${preset.path}`);
     }
   };
@@ -235,12 +87,15 @@ const AudioProcessing = () => {
 
   const renderModelContent = (modelKey: string) => {
     switch (modelKey) {
+      case "audio-translation":
       case "translate":
-        return <AudioTranslate state={state} isLocked={lockedTabs.translate} />;
+        return <AudioTranslate state={state} isLocked={lockedTabs[modelKey] || lockedTabs["translate"]} />;
+      case "voice-cloning":
       case "clone":
-        return <VoiceClone state={state} isLocked={lockedTabs.clone} />;
+        return <VoiceClone state={state} isLocked={lockedTabs[modelKey] || lockedTabs["clone"]} />;
+      case "audio-enhancement":
       case "enhance":
-        return <AudioEnhance state={state} isLocked={lockedTabs.enhance} />;
+        return <AudioEnhance state={state} isLocked={lockedTabs[modelKey] || lockedTabs["enhance"]} />;
       default:
         return null;
     }
@@ -248,15 +103,23 @@ const AudioProcessing = () => {
 
   // Get current model based on path
   const getCurrentModel = (path: string) => {
-    return traditionalModels.find(model => model.path === path);
+    const cleanPath = path.replace('/audio/', '').replace('/audio', '');
+    return traditionalModels.find(model => 
+      model.path.includes(cleanPath) || 
+      model.key === cleanPath ||
+      model.key.replace('-', '_') === cleanPath
+    );
   };
+
+  // Show error in a toast/banner instead of full page
+  const showError = error && !loading;
 
   return (
     <AIStudioBase
       title="AI Audio Processing Studio"
       subtitle="Audio Processing"
       icon={Volume2}
-      projects={mockProjects}
+      projects={projects}
       traditionalModels={traditionalModels}
       contentPresets={audioContentPresets}
       activeItem={null}
@@ -264,6 +127,8 @@ const AudioProcessing = () => {
       onItemSelect={handleItemSelect}
       onNewProject={handleNewProject}
       filterTypes={filterTypes}
+      category="audio"
+      loading={loading}
     >
       <Routes>
         {/* Main selection interface */}
@@ -276,16 +141,33 @@ const AudioProcessing = () => {
               traditionalModels={traditionalModels}
               contentPresets={audioContentPresets}
               basePath="/audio"
+              loading={loading}
             />
           } 
         />
         
-        {/* Traditional model routes */}
+        {/* Dynamic routes for traditional models */}
+        {traditionalModels.map((model) => (
+          <Route 
+            key={model.key}
+            path={model.path} 
+            element={
+              <ModelPage 
+                model={model}
+                backPath="/audio"
+              >
+                {renderModelContent(model.key)}
+              </ModelPage>
+            } 
+          />
+        ))}
+
+        {/* Legacy routes for backward compatibility */}
         <Route 
           path="/translate" 
           element={
             <ModelPage 
-              model={traditionalModels.find(m => m.key === "translate")!}
+              model={traditionalModels.find(m => m.key.includes("translation")) || traditionalModels[0]}
               backPath="/audio"
             >
               {renderModelContent("translate")}
@@ -297,7 +179,7 @@ const AudioProcessing = () => {
           path="/clone" 
           element={
             <ModelPage 
-              model={traditionalModels.find(m => m.key === "clone")!}
+              model={traditionalModels.find(m => m.key.includes("cloning")) || traditionalModels[0]}
               backPath="/audio"
             >
               {renderModelContent("clone")}
@@ -309,48 +191,11 @@ const AudioProcessing = () => {
           path="/enhance" 
           element={
             <ModelPage 
-              model={traditionalModels.find(m => m.key === "enhance")!}
+              model={traditionalModels.find(m => m.key.includes("enhancement")) || traditionalModels[0]}
               backPath="/audio"
             >
               {renderModelContent("enhance")}
             </ModelPage>
-          } 
-        />
-
-        {/* Content generation routes */}
-        <Route 
-          path="/podcast" 
-          element={
-            <div className="flex-1 p-4 lg:p-8">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">Podcast Generation</h2>
-                <p className="text-muted-foreground">Podcast generation interface coming soon...</p>
-              </div>
-            </div>
-          } 
-        />
-        
-        <Route 
-          path="/music" 
-          element={
-            <div className="flex-1 p-4 lg:p-8">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">Music Generation</h2>
-                <p className="text-muted-foreground">Music generation interface coming soon...</p>
-              </div>
-            </div>
-          } 
-        />
-        
-        <Route 
-          path="/voiceover" 
-          element={
-            <div className="flex-1 p-4 lg:p-8">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-4">Voiceover Generation</h2>
-                <p className="text-muted-foreground">Voiceover generation interface coming soon...</p>
-              </div>
-            </div>
           } 
         />
       </Routes>
@@ -359,11 +204,11 @@ const AudioProcessing = () => {
       <ModelModal
         isOpen={isModalOpen}
         onClose={closeModal}
-        model={getCurrentModel(location.pathname.replace('/audio', '')) as any}
+        model={getCurrentModel(location.pathname) as any}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       >
-        {renderModelContent(getCurrentModel(location.pathname.replace('/audio', ''))?.key || "")}
+        {renderModelContent(getCurrentModel(location.pathname)?.key || "")}
       </ModelModal>
     </AIStudioBase>
   );

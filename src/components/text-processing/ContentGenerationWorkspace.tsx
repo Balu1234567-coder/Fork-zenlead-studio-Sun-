@@ -4,17 +4,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  ArrowRight, 
-  Play, 
-  Loader2, 
-  CheckCircle2, 
-  Clock, 
-  Target, 
-  Copy, 
-  Download, 
-  Edit 
+import {
+  ArrowRight,
+  Play,
+  CheckCircle2,
+  Clock,
+  Target,
+  Copy,
+  Download,
+  Edit
 } from "lucide-react";
+import { ContentGenerationShimmer } from "@/components/UploadShimmer";
 
 interface ContentPreset {
   id: string;
@@ -207,10 +207,7 @@ const ContentGenerationWorkspace = ({
               disabled={!contentIdea.trim() || isGenerating}
             >
               {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating...
-                </>
+                <ContentGenerationShimmer />
               ) : (
                 <>
                   <Play className="h-4 w-4" />

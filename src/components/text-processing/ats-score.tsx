@@ -4,6 +4,8 @@ import { LockedFeature } from "@/components/ui/locked-feature";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { ArrowRight } from "lucide-react";
 import { TextProcessingState } from "@/pages/TextProcessing";
+import { AtsScoreShimmer } from "@/components/ContentShimmer";
+import { ContentGenerationShimmer } from "@/components/UploadShimmer";
 
 interface AtsScoreProps {
   state: TextProcessingState;
@@ -62,7 +64,7 @@ const AtsScore = ({ state, isLocked }: AtsScoreProps) => {
           <CardContent>
             <div className="max-h-[400px] overflow-y-auto border bg-background rounded-md px-4 py-3 shadow-inner">
               {isAtsLoading && (
-                <div className="text-center text-muted-foreground py-12">Calculating ATS score, please wait...</div>
+                <AtsScoreShimmer />
               )}
               {!isAtsLoading && atsScore !== null && (
                 <div className="space-y-4">
@@ -79,13 +81,19 @@ const AtsScore = ({ state, isLocked }: AtsScoreProps) => {
               )}
             </div>
             <div className="flex justify-end mt-4">
-              <Button 
+              <Button
                 onClick={handleGenerateAtsScore}
                 disabled={!atsFile || !jobDescription.trim() || isAtsLoading}
                 className="w-full"
               >
-                {isAtsLoading ? "Calculating..." : "Generate ATS Score"} 
-                {!isAtsLoading && <ArrowRight className="ml-2 h-4 w-4" />}
+                {isAtsLoading ? (
+                  <ContentGenerationShimmer />
+                ) : (
+                  <>
+                    Generate ATS Score
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

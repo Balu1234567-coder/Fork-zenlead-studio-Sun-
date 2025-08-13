@@ -1,9 +1,9 @@
-
 import { useState } from "react";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { UploadButtonShimmer } from "@/components/UploadShimmer";
 
 export const AudioUpload = ({ onUpload, isLoading }: { onUpload?: (file: File) => void; isLoading?: boolean }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -87,9 +87,7 @@ export const AudioUpload = ({ onUpload, isLoading }: { onUpload?: (file: File) =
                 className="relative"
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
-                  </>
+                  <UploadButtonShimmer />
                 ) : (
                   "Select File"
                 )}
