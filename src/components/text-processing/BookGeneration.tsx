@@ -161,9 +161,9 @@ const BookGeneration = () => {
       description: "Book generated successfully! Redirecting to your project...",
     });
 
-    // Navigate to the unique URL
+    // Navigate to the unique URL with /text/long-form-book prefix
     setTimeout(() => {
-      navigate(projectMeta.unique_url);
+      navigate(`/text/long-form-book/${projectMeta.url_slug}`);
     }, 2000);
   };
 
