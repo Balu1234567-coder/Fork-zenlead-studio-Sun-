@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { HowItWorks } from "@/components/HowItWorks";
 import { UseCasesSection } from "@/components/UseCasesSection";
 import { Footer } from "@/components/Footer";
+import DebugApiStatus from "@/components/DebugApiStatus";
 
 const Index = () => {
   return (
