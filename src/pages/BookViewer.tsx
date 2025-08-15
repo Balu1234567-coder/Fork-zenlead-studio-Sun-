@@ -63,7 +63,7 @@ interface BookData {
 }
 
 const BookViewer: React.FC = () => {
-  const { urlSlug } = useParams<{ urlSlug: string }>();
+  const { urlSlug, projectId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -76,13 +76,24 @@ const BookViewer: React.FC = () => {
   const [chapters, setChapters] = useState<any[]>([]);
 
   const action = searchParams.get('action');
-  const usageId = urlSlug?.includes('-') ? urlSlug.split('-').pop() : urlSlug;
+  const viewParam = searchParams.get('view');
+
+  // Get the identifier - could be urlSlug, projectId, or uniqueId from URL path
+  const identifier = urlSlug || projectId || window.location.pathname.slice(1);
+  const usageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
 
   useEffect(() => {
-    if (usageId) {
+    if (identifier) {
       loadBookState();
     }
-  }, [usageId]);
+  }, [identifier]);
+
+  useEffect(() => {
+    // Handle view parameter
+    if (viewParam === 'live' && state?.status === 'processing') {
+      setView('generator');
+    }
+  }, [viewParam, state]);
 
   useEffect(() => {
     // Handle action parameters
@@ -94,7 +105,7 @@ const BookViewer: React.FC = () => {
   }, [action, state]);
 
   const loadBookState = async () => {
-    if (!usageId && !urlSlug) return;
+    if (!identifier) return;
 
     try {
       setLoading(true);
@@ -102,10 +113,11 @@ const BookViewer: React.FC = () => {
       let currentUsageId = usageId;
       let projectResponse = null;
 
-      // If we have a URL slug but no usageId, resolve it first
-      if (urlSlug && !usageId) {
+      // Try different resolution methods based on identifier format
+      if (identifier && !currentUsageId) {
         try {
-          const slugResponse = await fetch(`/api/ai/long-form-book/project/${urlSlug}`, {
+          // First try as URL slug
+          const slugResponse = await fetch(`/api/ai/long-form-book/project/${identifier}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
               'Content-Type': 'application/json'
@@ -118,9 +130,25 @@ const BookViewer: React.FC = () => {
               projectResponse = slugResult.data;
               currentUsageId = projectResponse.usage_id;
             }
+          } else {
+            // If slug resolution fails, try as UUID
+            const uuidResponse = await fetch(`/api/ai/usage/project/uuid/${identifier}`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (uuidResponse.ok) {
+              const uuidResult = await uuidResponse.json();
+              if (uuidResult.success) {
+                projectResponse = uuidResult.data;
+                currentUsageId = projectResponse.usage_id;
+              }
+            }
           }
-        } catch (slugError) {
-          console.warn('Failed to resolve URL slug:', slugError);
+        } catch (resolveError) {
+          console.warn('Failed to resolve project identifier:', resolveError);
         }
       }
 
