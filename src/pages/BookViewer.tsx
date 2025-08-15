@@ -65,9 +65,9 @@ interface BookData {
 
 const BookViewer: React.FC = () => {
   const { urlSlug, projectId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { identifier, viewMode, action, updateViewMode, saveState } = useUniqueUrl();
 
   const [state, setState] = useState<GenerationState | null>(null);
   const [bookData, setBookData] = useState<BookData | null>(null);
@@ -75,15 +75,13 @@ const BookViewer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'viewer' | 'generator'>('viewer');
   const [chapters, setChapters] = useState<any[]>([]);
+  const [projectResolved, setProjectResolved] = useState(false);
 
-  const action = searchParams.get('action');
-  const viewParam = searchParams.get('view');
-
-  // Get the identifier - could be urlSlug, projectId, or uniqueId from URL path
-  const identifier = urlSlug || projectId || window.location.pathname.slice(1);
+  // Use URL slug from params or identifier from hook
+  const currentIdentifier = urlSlug || projectId || identifier;
 
   // Extract possible usage ID from identifier for fallback
-  const extractedUsageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
+  const extractedUsageId = currentIdentifier?.includes('-') ? currentIdentifier.split('-').pop() : currentIdentifier;
 
   useEffect(() => {
     if (identifier) {
