@@ -89,8 +89,17 @@ const BookViewer: React.FC = () => {
   }, [identifier]);
 
   useEffect(() => {
-    // Handle view parameter
-    if (viewParam === 'live' && state?.status === 'processing') {
+    // Handle view parameter - show live view for any processing status
+    const isProcessing = state?.status === 'processing' ||
+                        state?.status === 'generating' ||
+                        state?.status === 'in_progress' ||
+                        state?.current_operation ||
+                        (state?.progress && state?.progress < 100);
+
+    if (viewParam === 'live' && isProcessing) {
+      setView('generator');
+    } else if (viewParam === 'live') {
+      // If explicitly requesting live view but not processing, still show it
       setView('generator');
     }
   }, [viewParam, state]);
