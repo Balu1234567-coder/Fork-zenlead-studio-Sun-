@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import EnhancedProjectDashboard from "@/components/EnhancedProjectDashboard";
 import ProjectTemplateManager from "@/components/ProjectTemplateManager";
+import ProjectManager from "@/components/ProjectManager";
 import { EnhancedBookApiService } from "@/lib/bookApiService";
 
 interface BookProjectsState {
@@ -176,7 +177,7 @@ const BookProjects: React.FC = () => {
         <CreditWarning />
 
         <Tabs value={state.selectedTab} onValueChange={(value) => setState(prev => ({ ...prev, selectedTab: value }))} className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
@@ -188,6 +189,10 @@ const BookProjects: React.FC = () => {
             <TabsTrigger value="projects" className="flex items-center gap-2">
               <Book className="h-4 w-4" />
               All Projects
+            </TabsTrigger>
+            <TabsTrigger value="manager" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Manager
             </TabsTrigger>
           </TabsList>
 
@@ -230,6 +235,16 @@ const BookProjects: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="manager" className="space-y-6">
+            {state.loading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : (
+              <ProjectManager />
             )}
           </TabsContent>
         </Tabs>
