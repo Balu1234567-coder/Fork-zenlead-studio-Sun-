@@ -119,7 +119,7 @@ const BookViewer: React.FC = () => {
       if (currentIdentifier) {
         try {
           // First check local storage for quick resolution
-          const localProject = ProjectUtils.findProjectBySlug(identifier);
+          const localProject = ProjectUtils.findProjectBySlug(currentIdentifier);
           if (localProject && localProject.usage_id) {
             currentUsageId = localProject.usage_id;
             console.log('Resolved from local storage:', localProject.project_title);
