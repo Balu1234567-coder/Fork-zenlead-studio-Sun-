@@ -236,6 +236,17 @@ const BookViewer: React.FC = () => {
 
       setState(enhancedState);
 
+      // Auto-set view to generator for processing projects (unless already viewing)
+      const isProcessing = enhancedState.status === 'processing' ||
+                          enhancedState.status === 'generating' ||
+                          enhancedState.status === 'in_progress' ||
+                          enhancedState.current_operation ||
+                          (enhancedState.progress && enhancedState.progress < 100);
+
+      if (isProcessing && view === 'viewer') {
+        setView('generator');
+      }
+
       // If completed, try to load the full book data using new stored endpoint
       if (statusResponse.status === 'completed') {
         try {
