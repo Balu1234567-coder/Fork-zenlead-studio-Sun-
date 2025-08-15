@@ -264,7 +264,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
             title: "Resumed",
             description: `${project.title} generation resumed`,
           });
-          navigate(`/book-generation/${project.url_slug}?view=live`);
+          navigate(`/${project.url_slug}?view=live`);
           break;
 
         case 'view':
