@@ -233,7 +233,7 @@ const BookViewer: React.FC = () => {
         statusResponse = await BookApiService.getGenerationStatus(currentUsageId);
 
         // Create fallback state with proper URL slug
-        const fallbackUrlSlug = identifier || urlSlug || `book-${currentUsageId?.slice(0, 8) || 'unknown'}`;
+        const fallbackUrlSlug = currentIdentifier || urlSlug || `book-${currentUsageId?.slice(0, 8) || 'unknown'}`;
 
         enhancedState = {
           usage_id: currentUsageId || '',
