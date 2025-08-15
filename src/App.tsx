@@ -229,11 +229,53 @@ const App = () => {
                     </AuthenticatedRoute>
                   }
                 />
+
+                {/* AI Studio Routes */}
+                <Route
+                  path="/ai-studio/*"
+                  element={
+                    <AuthenticatedRoute>
+                      <TextProcessing />
+                    </AuthenticatedRoute>
+                  }
+                />
+
+                {/* Book Generation with Unique URLs */}
                 <Route
                   path="/book-generation/:urlSlug"
                   element={
                     <AuthenticatedRoute>
+                      <BookViewer />
+                    </AuthenticatedRoute>
+                  }
+                />
+
+                {/* Project Access by UUID */}
+                <Route
+                  path="/project/:projectId"
+                  element={
+                    <AuthenticatedRoute>
+                      <BookViewer />
+                    </AuthenticatedRoute>
+                  }
+                />
+
+                {/* Direct Book Viewer for Enhanced Features */}
+                <Route
+                  path="/book-viewer"
+                  element={
+                    <AuthenticatedRoute>
                       <EnhancedBookViewer />
+                    </AuthenticatedRoute>
+                  }
+                />
+
+                {/* Unique ID Routes for refreshable URLs */}
+                <Route
+                  path="/:uniqueId"
+                  element={
+                    <AuthenticatedRoute>
+                      <BookViewer />
                     </AuthenticatedRoute>
                   }
                 />

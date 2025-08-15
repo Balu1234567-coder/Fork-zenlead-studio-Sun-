@@ -177,18 +177,20 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
   }, [isOpen]);
 
   const handleProjectClick = (project: ProjectData) => {
+    onClose(); // Close sidebar before navigation
+
     if (project.status === 'processing' && project.is_live) {
       // Navigate to live generation view
-      navigate(`/book-generation/${project.url_slug}?view=live`);
+      navigate(`/${project.url_slug}?view=live`);
     } else if (project.status === 'completed') {
       // Navigate to completed book view
-      navigate(`/book-generation/${project.url_slug}`);
+      navigate(`/${project.url_slug}`);
     } else if (project.can_resume) {
       // Navigate to resume generation
-      navigate(`/book-generation/${project.url_slug}?action=resume`);
+      navigate(`/${project.url_slug}?action=resume`);
     } else {
       // Default view
-      navigate(`/book-generation/${project.url_slug}`);
+      navigate(`/${project.url_slug}`);
     }
   };
 
