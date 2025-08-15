@@ -114,10 +114,17 @@ const BookViewer: React.FC = () => {
   }, [action, state]);
 
   const loadBookState = async () => {
-    if (!identifier) return;
+    if (!identifier) {
+      setError('No project identifier provided');
+      setLoading(false);
+      return;
+    }
+
+    console.log('Loading book state for identifier:', identifier);
 
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
 
       let currentUsageId = usageId;
       let projectResponse = null;
