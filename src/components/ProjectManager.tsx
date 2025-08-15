@@ -10,14 +10,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Book, 
-  Play, 
-  Pause, 
-  CheckCircle, 
-  Clock, 
+import {
+  Book,
+  Play,
+  Pause,
+  CheckCircle,
+  Clock,
   AlertTriangle,
-  Download, 
+  Download,
   Eye,
   Edit,
   Trash2,
@@ -28,7 +28,7 @@ import {
   RefreshCw,
   Plus,
   Archive,
-  Restore,
+  RotateCcw,
   ExternalLink,
   Loader2
 } from "lucide-react";
@@ -430,7 +430,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({ className = "" }) => {
                 ) : (
                   <>
                     <DropdownMenuItem onClick={() => handleProjectAction(project, 'restore')}>
-                      <Restore className="h-4 w-4 mr-2" />
+                      <RotateCcw className="h-4 w-4 mr-2" />
                       Restore
                     </DropdownMenuItem>
                     <DropdownMenuItem 
