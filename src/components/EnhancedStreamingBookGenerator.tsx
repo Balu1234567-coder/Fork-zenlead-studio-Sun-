@@ -32,6 +32,7 @@ import { BookGenerationStateManager, BookGenerationUtils } from "@/lib/bookGener
 import { BookContentRenderer } from "@/components/BookContentRenderer";
 import { BookApiService } from "@/lib/bookApi";
 import { BookGenerationRecovery } from "@/lib/networkRecovery";
+import { ProjectUtils } from "@/lib/projectUtils";
 
 interface StreamEvent {
   type: string;
@@ -431,12 +432,27 @@ const EnhancedStreamingBookGenerator: React.FC<EnhancedStreamingBookGeneratorPro
             chapters,
             tableOfContents
           });
-          
+
+          // Update project metadata with final data
+          if (bookMetadata?.title) {
+            const projectMeta = ProjectUtils.createProjectIdentifiers(bookMetadata.title);
+            ProjectUtils.saveProjectToLocalHistory({
+              usage_id: event.usage_id,
+              project_uuid: projectMeta.project_uuid,
+              url_slug: projectMeta.url_slug,
+              project_title: bookMetadata.title,
+              unique_url: projectMeta.unique_url,
+              shareable_url: projectMeta.shareable_url,
+              created_at: new Date().toISOString(),
+              status: 'completed'
+            });
+          }
+
           toast({
             title: "Success",
             description: "Book generated and stored successfully!",
           });
-          
+
           if (onComplete && event.usage_id) {
             onComplete(event.usage_id, event.book_data || {});
           }
