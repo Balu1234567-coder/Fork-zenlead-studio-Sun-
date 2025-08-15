@@ -179,8 +179,15 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
   const handleProjectClick = (project: ProjectData) => {
     onClose(); // Close sidebar before navigation
 
-    if (project.status === 'processing' && project.is_live) {
-      // Navigate to live generation view
+    // Check for any processing-related status
+    const isProcessing = project.status === 'processing' ||
+                        project.status === 'generating' ||
+                        project.status === 'in_progress' ||
+                        project.current_operation ||
+                        (project.progress && project.progress < 100);
+
+    if (isProcessing) {
+      // Always navigate to live generation view for any processing project
       navigate(`/text/long-form-book/${project.url_slug}?view=live`);
     } else if (project.status === 'completed') {
       // Navigate to completed book view
