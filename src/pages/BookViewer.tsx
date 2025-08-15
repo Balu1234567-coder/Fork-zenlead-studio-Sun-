@@ -289,10 +289,27 @@ const BookViewer: React.FC = () => {
 
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Failed to load book state');
+      console.error('BookViewer error:', err);
+
+      let errorMessage = err.message || 'Failed to load book state';
+      let toastTitle = "Error";
+
+      // Provide more specific error messages based on error type
+      if (err.message?.includes('500')) {
+        errorMessage = 'Server error occurred. The book generation service may be temporarily unavailable.';
+        toastTitle = "Server Error";
+      } else if (err.message?.includes('Invalid usage ID')) {
+        errorMessage = 'Invalid project ID. Please check the URL or try accessing from your project list.';
+        toastTitle = "Invalid Project";
+      } else if (err.message?.includes('Failed to get status')) {
+        errorMessage = 'Unable to get project status. The project may not exist or you may not have access.';
+        toastTitle = "Access Error";
+      }
+
+      setError(errorMessage);
       toast({
-        title: "Error",
-        description: "Failed to load book state",
+        title: toastTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
