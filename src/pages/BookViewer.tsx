@@ -105,6 +105,29 @@ const BookViewer: React.FC = () => {
     }
   }, [action, state]);
 
+  const handleProjectResolved = (projectData: any) => {
+    console.log('Project resolved via UniqueUrlHandler:', projectData);
+    setProjectResolved(true);
+
+    // Save current state to URL state manager
+    if (saveState) {
+      saveState({
+        url_slug: projectData.url_slug,
+        project_uuid: projectData.project_uuid,
+        usage_id: projectData.usage_id,
+        status: projectData.status,
+        can_refresh: true
+      });
+    }
+  };
+
+  const handleStateRecovered = (state: any) => {
+    console.log('State recovered via UniqueUrlHandler:', state);
+    if (state?.view_mode === 'live') {
+      setView('generator');
+    }
+  };
+
   const loadBookState = async () => {
     if (!currentIdentifier) return;
 
