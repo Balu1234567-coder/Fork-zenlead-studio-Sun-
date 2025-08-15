@@ -146,7 +146,7 @@ const BookViewer: React.FC = () => {
 
           // If slug resolution fails, try as UUID
           if (!resolvedFromBackend) {
-            const uuidResponse = await fetch(`/api/ai/usage/project/uuid/${identifier}`, {
+            const uuidResponse = await fetch(`/api/ai/usage/project/uuid/${currentIdentifier}`, {
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                 'Content-Type': 'application/json'
