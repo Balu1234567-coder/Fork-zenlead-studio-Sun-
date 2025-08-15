@@ -181,16 +181,16 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
 
     if (project.status === 'processing' && project.is_live) {
       // Navigate to live generation view
-      navigate(`/${project.url_slug}?view=live`);
+      navigate(`/text/long-form-book/${project.url_slug}?view=live`);
     } else if (project.status === 'completed') {
       // Navigate to completed book view
-      navigate(`/${project.url_slug}`);
+      navigate(`/text/long-form-book/${project.url_slug}`);
     } else if (project.can_resume) {
       // Navigate to resume generation
-      navigate(`/${project.url_slug}?action=resume`);
+      navigate(`/text/long-form-book/${project.url_slug}?action=resume`);
     } else {
       // Default view
-      navigate(`/${project.url_slug}`);
+      navigate(`/text/long-form-book/${project.url_slug}`);
     }
   };
 
