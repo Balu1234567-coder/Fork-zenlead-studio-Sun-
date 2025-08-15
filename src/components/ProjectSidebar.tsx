@@ -223,7 +223,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
           break;
           
         case 'view_live':
-          navigate(`/book-generation/${project.url_slug}?view=live`);
+          navigate(`/text/long-form-book/${project.url_slug}?view=live`);
           break;
           
         case 'download_pdf':
