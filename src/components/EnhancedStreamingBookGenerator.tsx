@@ -299,8 +299,26 @@ const EnhancedStreamingBookGenerator: React.FC<EnhancedStreamingBookGeneratorPro
 
       case 'credits_deducted':
         setCurrentMessage(event.message || 'Credits deducted successfully...');
-        setUsageId(event.usage_id || '');
+        const newUsageId = event.usage_id || '';
+        setUsageId(newUsageId);
         setProgress(5);
+
+        // Update local storage with usage_id for URL persistence
+        if (newUsageId && requestData.url_slug) {
+          const projectTitle = requestData.project_title || requestData.book_title || 'AI Generated Book';
+          ProjectUtils.saveProjectToLocalHistory({
+            usage_id: newUsageId,
+            project_uuid: requestData.project_uuid || '',
+            url_slug: requestData.url_slug,
+            project_title: projectTitle,
+            unique_url: `/${requestData.url_slug}`,
+            shareable_url: `/project/${requestData.project_uuid}`,
+            created_at: new Date().toISOString(),
+            status: 'processing',
+            last_accessed: new Date().toISOString()
+          });
+          console.log('💾 Updated local storage with usage_id:', newUsageId);
+        }
         break;
 
       case 'progress':
