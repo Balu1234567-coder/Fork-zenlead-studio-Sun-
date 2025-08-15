@@ -48,6 +48,11 @@ export interface HeartbeatData {
 export class EnhancedBookApiService {
   private static getAuthHeaders() {
     const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      console.warn('No auth token found in localStorage');
+    }
+
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -125,16 +130,21 @@ export class EnhancedBookApiService {
 
   // Get generation status
   static async getGenerationStatus(usageId: string): Promise<any> {
+    console.log('Fetching status for usageId:', usageId);
+
     const response = await fetch(`/api/ai/long-form-book/${usageId}/status`, {
       headers: this.getAuthHeaders()
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get status');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`Status API error ${response.status}:`, errorText);
+      throw new Error(`Failed to get status: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
     if (!result.success) {
+      console.error('Status API returned unsuccessful result:', result);
       throw new Error(result.message || 'Failed to get status');
     }
 

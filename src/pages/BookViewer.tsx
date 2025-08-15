@@ -64,7 +64,12 @@ interface BookData {
 }
 
 const BookViewer: React.FC = () => {
+<<<<<<< HEAD
   const { urlSlug, projectId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
+=======
+  const { urlSlug, projectId, uniqueId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
+  const [searchParams] = useSearchParams();
+>>>>>>> refs/remotes/origin/ai_main_ac699225e90b
   const navigate = useNavigate();
   const { toast } = useToast();
   const { identifier, viewMode, action, updateViewMode, saveState } = useUniqueUrl();
@@ -80,8 +85,24 @@ const BookViewer: React.FC = () => {
   // Use URL slug from params or identifier from hook
   const currentIdentifier = urlSlug || projectId || identifier;
 
+<<<<<<< HEAD
   // Extract possible usage ID from identifier for fallback
   const extractedUsageId = currentIdentifier?.includes('-') ? currentIdentifier.split('-').pop() : currentIdentifier;
+=======
+  // Get the identifier - prioritize uniqueId from /text/long-form-book/:uniqueId route
+  const identifier = uniqueId || urlSlug || projectId || window.location.pathname.slice(1);
+  const usageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
+>>>>>>> refs/remotes/origin/ai_main_ac699225e90b
+
+  // Log for debugging
+  console.log('BookViewer identifiers:', {
+    uniqueId,
+    urlSlug,
+    projectId,
+    pathName: window.location.pathname,
+    finalIdentifier: identifier,
+    extractedUsageId: usageId
+  });
 
   useEffect(() => {
     if (currentIdentifier && projectResolved) {
@@ -90,8 +111,22 @@ const BookViewer: React.FC = () => {
   }, [currentIdentifier, projectResolved]);
 
   useEffect(() => {
+<<<<<<< HEAD
     // Handle view parameter
     if (viewMode === 'live' && state?.status === 'processing') {
+=======
+    // Handle view parameter - show live view for any processing status
+    const isProcessing = state?.status === 'processing' ||
+                        state?.status === 'generating' ||
+                        state?.status === 'in_progress' ||
+                        state?.current_operation ||
+                        (state?.progress && state?.progress < 100);
+
+    if (viewParam === 'live' && isProcessing) {
+      setView('generator');
+    } else if (viewParam === 'live') {
+      // If explicitly requesting live view but not processing, still show it
+>>>>>>> refs/remotes/origin/ai_main_ac699225e90b
       setView('generator');
     }
   }, [viewMode, state]);
@@ -129,10 +164,33 @@ const BookViewer: React.FC = () => {
   };
 
   const loadBookState = async () => {
+<<<<<<< HEAD
     if (!currentIdentifier) return;
+=======
+    if (!identifier) {
+      setError('No project identifier provided');
+      setLoading(false);
+      return;
+    }
+
+    // Validate identifier format to prevent API calls with invalid data
+    if (identifier.includes('text/long-form-book') ||
+        identifier.includes('/') ||
+        identifier.length < 3 ||
+        identifier === 'undefined' ||
+        identifier === 'null') {
+      setError('Invalid project identifier format');
+      setLoading(false);
+      console.error('Invalid identifier detected:', identifier);
+      return;
+    }
+
+    console.log('Loading book state for identifier:', identifier);
+>>>>>>> refs/remotes/origin/ai_main_ac699225e90b
 
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
 
       let currentUsageId = extractedUsageId;
       let projectResponse = null;
@@ -252,6 +310,13 @@ const BookViewer: React.FC = () => {
       } catch (stateError) {
         console.warn('Enhanced state not available, falling back to basic status:', stateError);
 
+        // Validate currentUsageId before making API call
+        if (!currentUsageId || currentUsageId.length < 8) {
+          throw new Error(`Invalid usage ID: ${currentUsageId}. Cannot fetch status.`);
+        }
+
+        console.log('Attempting to fetch status for usageId:', currentUsageId);
+
         // Fallback to existing status endpoint
         statusResponse = await BookApiService.getGenerationStatus(currentUsageId);
 
@@ -277,6 +342,7 @@ const BookViewer: React.FC = () => {
 
       setState(enhancedState);
 
+<<<<<<< HEAD
       // Update local storage with latest state if we resolved from backend
       if (resolvedFromBackend && projectResponse) {
         ProjectUtils.saveProjectToLocalHistory({
@@ -290,6 +356,17 @@ const BookViewer: React.FC = () => {
           status: enhancedState.status,
           last_accessed: new Date().toISOString()
         } as any);
+=======
+      // Auto-set view to generator for processing projects (unless already viewing)
+      const isProcessing = enhancedState.status === 'processing' ||
+                          enhancedState.status === 'generating' ||
+                          enhancedState.status === 'in_progress' ||
+                          enhancedState.current_operation ||
+                          (enhancedState.progress && enhancedState.progress < 100);
+
+      if (isProcessing && view === 'viewer') {
+        setView('generator');
+>>>>>>> refs/remotes/origin/ai_main_ac699225e90b
       }
 
       // If completed, try to load the full book data using new stored endpoint
@@ -320,10 +397,27 @@ const BookViewer: React.FC = () => {
 
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Failed to load book state');
+      console.error('BookViewer error:', err);
+
+      let errorMessage = err.message || 'Failed to load book state';
+      let toastTitle = "Error";
+
+      // Provide more specific error messages based on error type
+      if (err.message?.includes('500')) {
+        errorMessage = 'Server error occurred. The book generation service may be temporarily unavailable.';
+        toastTitle = "Server Error";
+      } else if (err.message?.includes('Invalid usage ID')) {
+        errorMessage = 'Invalid project ID. Please check the URL or try accessing from your project list.';
+        toastTitle = "Invalid Project";
+      } else if (err.message?.includes('Failed to get status')) {
+        errorMessage = 'Unable to get project status. The project may not exist or you may not have access.';
+        toastTitle = "Access Error";
+      }
+
+      setError(errorMessage);
       toast({
-        title: "Error",
-        description: "Failed to load book state",
+        title: toastTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -504,7 +598,13 @@ const BookViewer: React.FC = () => {
   }
 
   // Show generator view for active generation or resume
-  if (view === 'generator' || (state.status === 'processing' && !bookData)) {
+  const isActivelyProcessing = state.status === 'processing' ||
+                              state.status === 'generating' ||
+                              state.status === 'in_progress' ||
+                              state.current_operation ||
+                              (state.progress && state.progress < 100);
+
+  if (view === 'generator' || (isActivelyProcessing && !bookData)) {
     return (
       <UniqueUrlHandler
         onProjectResolved={handleProjectResolved}

@@ -51,6 +51,22 @@ const BookGeneration = () => {
     // Skip if we're handling template auto-start
     if (autoStartRequested) return;
 
+    // Clear any potentially corrupted state first
+    try {
+      const savedState = localStorage.getItem('book_generation_state');
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        // Check if saved state has invalid usage_id
+        if (!parsed.usageId || parsed.usageId.length < 8) {
+          console.log('Clearing invalid book generation state');
+          localStorage.removeItem('book_generation_state');
+        }
+      }
+    } catch (error) {
+      console.log('Clearing corrupted book generation state');
+      localStorage.removeItem('book_generation_state');
+    }
+
     const activeGeneration = BookGenerationUtils.hasActiveGeneration();
 
     if (activeGeneration.active) {
@@ -111,6 +127,7 @@ const BookGeneration = () => {
     // Save initial project state to local storage for quick recovery
     ProjectUtils.saveProjectToLocalHistory(projectData);
 
+<<<<<<< HEAD
     // Navigate to the unique URL for live viewing immediately
     navigate(`${projectMeta.unique_url}?view=live`);
 
@@ -119,6 +136,12 @@ const BookGeneration = () => {
       description: `Starting generation for "${projectTitle}". You can refresh this page safely.`,
       duration: 3000,
     });
+=======
+    // Navigate to the unique URL for live viewing with /text/long-form-book prefix
+    setTimeout(() => {
+      navigate(`/text/long-form-book/${projectMeta.url_slug}?view=live`);
+    }, 1000);
+>>>>>>> refs/remotes/origin/ai_main_ac699225e90b
   };
 
   const handleResumeGeneration = () => {
@@ -164,9 +187,16 @@ const BookGeneration = () => {
       description: "Book generated successfully! Your unique URL is preserved.",
     });
 
+<<<<<<< HEAD
     // Stay on the same unique URL, just remove the live view parameter
     const currentUrl = window.location.pathname;
     navigate(currentUrl, { replace: true });
+=======
+    // Navigate to the unique URL with /text/long-form-book prefix
+    setTimeout(() => {
+      navigate(`/text/long-form-book/${projectMeta.url_slug}`);
+    }, 2000);
+>>>>>>> refs/remotes/origin/ai_main_ac699225e90b
   };
 
   const handleGenerationError = (error: string) => {

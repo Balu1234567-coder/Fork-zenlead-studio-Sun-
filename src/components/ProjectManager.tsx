@@ -112,15 +112,15 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({ className = "" }) => {
     try {
       switch (action) {
         case 'view':
-          navigate(`/${project.url_slug}`);
+          navigate(`/text/long-form-book/${project.url_slug}`);
           break;
-          
+
         case 'view_live':
-          navigate(`/${project.url_slug}?view=live`);
+          navigate(`/text/long-form-book/${project.url_slug}?view=live`);
           break;
-          
+
         case 'resume':
-          navigate(`/${project.url_slug}?action=resume`);
+          navigate(`/text/long-form-book/${project.url_slug}?action=resume`);
           break;
           
         case 'pause':
