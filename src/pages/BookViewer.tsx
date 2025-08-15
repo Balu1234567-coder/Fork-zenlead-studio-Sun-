@@ -477,24 +477,29 @@ const BookViewer: React.FC = () => {
 
   if (error || !state) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12">
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              {error || 'Book not found. Please check the URL or try again.'}
-            </AlertDescription>
-          </Alert>
-          <div className="mt-6">
-            <Button onClick={() => navigate('/book-projects')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Projects
-            </Button>
+      <UniqueUrlHandler
+        onProjectResolved={handleProjectResolved}
+        onStateRecovered={handleStateRecovered}
+      >
+        <div className="min-h-screen bg-background">
+          <Navbar />
+          <div className="container mx-auto px-4 py-12">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {error || 'Book not found. Please check the URL or try again.'}
+              </AlertDescription>
+            </Alert>
+            <div className="mt-6">
+              <Button onClick={() => navigate('/book-projects')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Projects
+              </Button>
+            </div>
           </div>
+          <Footer />
         </div>
-        <Footer />
-      </div>
+      </UniqueUrlHandler>
     );
   }
 
