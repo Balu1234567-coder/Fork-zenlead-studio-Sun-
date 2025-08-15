@@ -458,15 +458,20 @@ const BookViewer: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12">
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
+      <UniqueUrlHandler
+        onProjectResolved={handleProjectResolved}
+        onStateRecovered={handleStateRecovered}
+      >
+        <div className="min-h-screen bg-background">
+          <Navbar />
+          <div className="container mx-auto px-4 py-12">
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
           </div>
+          <Footer />
         </div>
-        <Footer />
-      </div>
+      </UniqueUrlHandler>
     );
   }
 
