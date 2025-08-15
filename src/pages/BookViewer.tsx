@@ -63,7 +63,7 @@ interface BookData {
 }
 
 const BookViewer: React.FC = () => {
-  const { urlSlug, projectId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
+  const { urlSlug, projectId, uniqueId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
