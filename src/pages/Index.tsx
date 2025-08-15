@@ -12,6 +12,12 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Navbar />
       <Hero />
+
+      {/* Temporary debug component - remove after fixing the 500 error */}
+      <div className="py-8">
+        <DebugApiStatus />
+      </div>
+
       <FeatureSection />
       <HowItWorks />
       <UseCasesSection />
