@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BookApiService } from "@/lib/bookApi";
 import EnhancedStreamingBookGenerator from "@/components/EnhancedStreamingBookGenerator";
 import { BookContentRenderer } from "@/components/BookContentRenderer";
+import UniqueUrlHandler, { useUniqueUrl } from "@/components/UniqueUrlHandler";
 
 interface GenerationState {
   usage_id: string;
