@@ -438,7 +438,13 @@ const BookViewer: React.FC = () => {
   }
 
   // Show generator view for active generation or resume
-  if (view === 'generator' || (state.status === 'processing' && !bookData)) {
+  const isActivelyProcessing = state.status === 'processing' ||
+                              state.status === 'generating' ||
+                              state.status === 'in_progress' ||
+                              state.current_operation ||
+                              (state.progress && state.progress < 100);
+
+  if (view === 'generator' || (isActivelyProcessing && !bookData)) {
     return (
       <div className="min-h-screen bg-background">
         <EnhancedStreamingBookGenerator
