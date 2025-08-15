@@ -214,6 +214,13 @@ const BookViewer: React.FC = () => {
       } catch (stateError) {
         console.warn('Enhanced state not available, falling back to basic status:', stateError);
 
+        // Validate currentUsageId before making API call
+        if (!currentUsageId || currentUsageId.length < 8) {
+          throw new Error(`Invalid usage ID: ${currentUsageId}. Cannot fetch status.`);
+        }
+
+        console.log('Attempting to fetch status for usageId:', currentUsageId);
+
         // Fallback to existing status endpoint
         statusResponse = await BookApiService.getGenerationStatus(currentUsageId);
 
