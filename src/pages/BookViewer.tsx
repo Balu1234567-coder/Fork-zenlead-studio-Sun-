@@ -80,7 +80,9 @@ const BookViewer: React.FC = () => {
 
   // Get the identifier - could be urlSlug, projectId, or uniqueId from URL path
   const identifier = urlSlug || projectId || window.location.pathname.slice(1);
-  const usageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
+
+  // Extract possible usage ID from identifier for fallback
+  const extractedUsageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
 
   useEffect(() => {
     if (identifier) {
@@ -110,12 +112,21 @@ const BookViewer: React.FC = () => {
     try {
       setLoading(true);
 
-      let currentUsageId = usageId;
+      let currentUsageId = extractedUsageId;
       let projectResponse = null;
+      let resolvedFromBackend = false;
 
       // Try different resolution methods based on identifier format
-      if (identifier && !currentUsageId) {
+      if (identifier) {
         try {
+          // First check local storage for quick resolution
+          const localProject = ProjectUtils.findProjectBySlug(identifier);
+          if (localProject && localProject.usage_id) {
+            currentUsageId = localProject.usage_id;
+            console.log('Resolved from local storage:', localProject.project_title);
+          }
+
+          // Always try backend resolution for latest state
           // First try as URL slug
           const slugResponse = await fetch(`/api/ai/long-form-book/project/${identifier}`, {
             headers: {
@@ -129,9 +140,13 @@ const BookViewer: React.FC = () => {
             if (slugResult.success) {
               projectResponse = slugResult.data;
               currentUsageId = projectResponse.usage_id;
+              resolvedFromBackend = true;
+              console.log('Resolved from backend via slug:', projectResponse.project_title);
             }
-          } else {
-            // If slug resolution fails, try as UUID
+          }
+
+          // If slug resolution fails, try as UUID
+          if (!resolvedFromBackend) {
             const uuidResponse = await fetch(`/api/ai/usage/project/uuid/${identifier}`, {
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -144,11 +159,21 @@ const BookViewer: React.FC = () => {
               if (uuidResult.success) {
                 projectResponse = uuidResult.data;
                 currentUsageId = projectResponse.usage_id;
+                resolvedFromBackend = true;
+                console.log('Resolved from backend via UUID:', projectResponse.project_title);
               }
             }
           }
         } catch (resolveError) {
           console.warn('Failed to resolve project identifier:', resolveError);
+          // Fall back to local storage if available
+          if (!currentUsageId) {
+            const localProject = ProjectUtils.findProjectBySlug(identifier);
+            if (localProject && localProject.usage_id) {
+              currentUsageId = localProject.usage_id;
+              console.log('Falling back to local storage resolution');
+            }
+          }
         }
       }
 
@@ -200,7 +225,7 @@ const BookViewer: React.FC = () => {
             throw new Error('Failed to get state');
           }
         } else {
-          throw new Error('State endpoint not available');
+          throw new Error(`State endpoint failed: ${stateResponse.status}`);
         }
       } catch (stateError) {
         console.warn('Enhanced state not available, falling back to basic status:', stateError);
@@ -208,27 +233,45 @@ const BookViewer: React.FC = () => {
         // Fallback to existing status endpoint
         statusResponse = await BookApiService.getGenerationStatus(currentUsageId);
 
+        // Create fallback state with proper URL slug
+        const fallbackUrlSlug = identifier || urlSlug || `book-${currentUsageId?.slice(0, 8) || 'unknown'}`;
+
         enhancedState = {
-          usage_id: currentUsageId,
-          status: statusResponse.status,
+          usage_id: currentUsageId || '',
+          status: statusResponse?.status || 'unknown',
           progress: 0,
           current_chapter: 1,
-          url_slug: urlSlug || `book-${currentUsageId.slice(0, 8)}`,
-          created_at: statusResponse.created_at,
-          updated_at: statusResponse.created_at,
-          can_pause: statusResponse.status === 'processing',
-          can_resume: statusResponse.status === 'pending',
-          can_cancel: ['pending', 'processing'].includes(statusResponse.status),
+          url_slug: fallbackUrlSlug,
+          created_at: statusResponse?.created_at || new Date().toISOString(),
+          updated_at: statusResponse?.created_at || new Date().toISOString(),
+          can_pause: statusResponse?.status === 'processing',
+          can_resume: statusResponse?.status === 'pending',
+          can_cancel: ['pending', 'processing'].includes(statusResponse?.status || ''),
           access_level: 'private',
-          shareable_url: `/book-generation/${urlSlug}`,
-          has_recovery_data: statusResponse.has_output
+          shareable_url: `/${fallbackUrlSlug}`,
+          has_recovery_data: statusResponse?.has_output || false
         };
       }
 
       setState(enhancedState);
 
+      // Update local storage with latest state if we resolved from backend
+      if (resolvedFromBackend && projectResponse) {
+        ProjectUtils.saveProjectToLocalHistory({
+          usage_id: currentUsageId || '',
+          project_uuid: projectResponse.project_uuid || '',
+          url_slug: enhancedState.url_slug,
+          project_title: projectResponse.project_title || 'Unknown Project',
+          unique_url: `/${enhancedState.url_slug}`,
+          shareable_url: `/${enhancedState.url_slug}`,
+          created_at: enhancedState.created_at,
+          status: enhancedState.status,
+          last_accessed: new Date().toISOString()
+        } as any);
+      }
+
       // If completed, try to load the full book data using new stored endpoint
-      if (statusResponse.status === 'completed') {
+      if (enhancedState.status === 'completed') {
         try {
           const response = await fetch(`/api/ai/long-form-book/${currentUsageId}/stored`, {
             headers: {
