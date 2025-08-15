@@ -127,7 +127,7 @@ const BookViewer: React.FC = () => {
 
           // Always try backend resolution for latest state
           // First try as URL slug
-          const slugResponse = await fetch(`/api/ai/long-form-book/project/${identifier}`, {
+          const slugResponse = await fetch(`/api/ai/long-form-book/project/${currentIdentifier}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
               'Content-Type': 'application/json'
