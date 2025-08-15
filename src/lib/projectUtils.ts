@@ -53,8 +53,8 @@ export class ProjectUtils {
     return {
       project_uuid,
       url_slug,
-      unique_url: `/${url_slug}`,
-      shareable_url: `/project/${project_uuid}`
+      unique_url: `/text/long-form-book/${url_slug}`,
+      shareable_url: `/text/long-form-book/${url_slug}?shared=true`
     };
   }
 
