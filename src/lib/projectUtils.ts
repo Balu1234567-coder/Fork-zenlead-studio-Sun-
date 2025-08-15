@@ -16,6 +16,7 @@ export interface ProjectMetadata {
   shareable_url: string;
   created_at: string;
   status: string;
+  last_accessed?: string;
 }
 
 export class ProjectUtils {
