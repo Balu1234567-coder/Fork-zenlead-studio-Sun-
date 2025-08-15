@@ -116,7 +116,7 @@ const BookViewer: React.FC = () => {
       let resolvedFromBackend = false;
 
       // Try different resolution methods based on identifier format
-      if (identifier) {
+      if (currentIdentifier) {
         try {
           // First check local storage for quick resolution
           const localProject = ProjectUtils.findProjectBySlug(identifier);
