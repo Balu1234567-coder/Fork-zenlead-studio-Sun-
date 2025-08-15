@@ -497,16 +497,45 @@ const EnhancedStreamingBookGenerator: React.FC<EnhancedStreamingBookGeneratorPro
       return;
     }
 
-    console.log('🚀 Starting book generation...');
+    console.log('🚀 Starting book generation with unique URL support...');
+
+    // Ensure we have project metadata for unique URL tracking
+    const projectTitle = requestData.project_title || requestData.book_title || requestData.concept || 'AI Generated Book';
+
+    // If no project identifiers exist, create them
+    if (!requestData.project_uuid || !requestData.url_slug) {
+      const projectMeta = ProjectUtils.createProjectIdentifiers(projectTitle);
+      requestData.project_uuid = projectMeta.project_uuid;
+      requestData.url_slug = projectMeta.url_slug;
+      requestData.project_title = projectTitle;
+
+      console.log('🔗 Created unique URL:', projectMeta.unique_url);
+    }
+
     setIsGenerating(true);
     setProgress(0);
-    setCurrentMessage('Initializing...');
+    setCurrentMessage(`Initializing "${projectTitle}"...`);
     setChapters([]);
     setBookMetadata(null);
     setTableOfContents([]);
     setGenerationComplete(false);
     setShowCreditError(false);
     startTime.current = Date.now();
+
+    // Save initial state to local storage for URL persistence
+    if (requestData.url_slug) {
+      ProjectUtils.saveProjectToLocalHistory({
+        usage_id: usageId || '',
+        project_uuid: requestData.project_uuid,
+        url_slug: requestData.url_slug,
+        project_title: projectTitle,
+        unique_url: `/${requestData.url_slug}`,
+        shareable_url: `/project/${requestData.project_uuid}`,
+        created_at: new Date().toISOString(),
+        status: 'processing',
+        last_accessed: new Date().toISOString()
+      });
+    }
 
     try {
       streamHandler.current = createStreamHandler();
