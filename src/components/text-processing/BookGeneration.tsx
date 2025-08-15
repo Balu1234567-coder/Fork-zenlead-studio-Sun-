@@ -127,21 +127,14 @@ const BookGeneration = () => {
     // Save initial project state to local storage for quick recovery
     ProjectUtils.saveProjectToLocalHistory(projectData);
 
-<<<<<<< HEAD
-    // Navigate to the unique URL for live viewing immediately
-    navigate(`${projectMeta.unique_url}?view=live`);
+    // Navigate to the unique URL for live viewing with /text/long-form-book prefix
+    navigate(`/text/long-form-book/${projectMeta.url_slug}?view=live`);
 
     toast({
       title: "Generation Started",
       description: `Starting generation for "${projectTitle}". You can refresh this page safely.`,
       duration: 3000,
     });
-=======
-    // Navigate to the unique URL for live viewing with /text/long-form-book prefix
-    setTimeout(() => {
-      navigate(`/text/long-form-book/${projectMeta.url_slug}?view=live`);
-    }, 1000);
->>>>>>> refs/remotes/origin/ai_main_ac699225e90b
   };
 
   const handleResumeGeneration = () => {
@@ -187,16 +180,6 @@ const BookGeneration = () => {
       description: "Book generated successfully! Your unique URL is preserved.",
     });
 
-<<<<<<< HEAD
-    // Stay on the same unique URL, just remove the live view parameter
-    const currentUrl = window.location.pathname;
-    navigate(currentUrl, { replace: true });
-=======
-    // Navigate to the unique URL with /text/long-form-book prefix
-    setTimeout(() => {
-      navigate(`/text/long-form-book/${projectMeta.url_slug}`);
-    }, 2000);
->>>>>>> refs/remotes/origin/ai_main_ac699225e90b
   };
 
   const handleGenerationError = (error: string) => {
