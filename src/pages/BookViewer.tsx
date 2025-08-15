@@ -167,7 +167,7 @@ const BookViewer: React.FC = () => {
           console.warn('Failed to resolve project identifier:', resolveError);
           // Fall back to local storage if available
           if (!currentUsageId) {
-            const localProject = ProjectUtils.findProjectBySlug(identifier);
+            const localProject = ProjectUtils.findProjectBySlug(currentIdentifier);
             if (localProject && localProject.usage_id) {
               currentUsageId = localProject.usage_id;
               console.log('Falling back to local storage resolution');
