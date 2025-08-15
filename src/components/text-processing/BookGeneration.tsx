@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import DynamicFormGenerator from "@/components/DynamicFormGenerator";
 import EnhancedStreamingBookGenerator from "@/components/EnhancedStreamingBookGenerator";
 import { BookGenerationUtils, BookGenerationStateManager } from "@/lib/bookGenerationState";
+import { ProjectUtils } from "@/lib/projectUtils";
 
 const BookGeneration = () => {
   const { toast } = useToast();
@@ -74,13 +75,45 @@ const BookGeneration = () => {
   }, [autoStartRequested]);
 
   const handleGenerate = async (validatedData: any) => {
-    setGenerationRequestData(validatedData);
+    // Create unique identifiers for this project
+    const projectTitle = validatedData.book_title || validatedData.concept || ProjectUtils.generateProjectTitle(validatedData.concept);
+    const projectMeta = ProjectUtils.createProjectIdentifiers(projectTitle);
+
+    // Save project metadata immediately
+    const projectData = {
+      usage_id: '', // Will be set when we get response from backend
+      project_uuid: projectMeta.project_uuid,
+      url_slug: projectMeta.url_slug,
+      project_title: projectTitle,
+      unique_url: projectMeta.unique_url,
+      shareable_url: projectMeta.shareable_url,
+      created_at: new Date().toISOString(),
+      status: 'processing'
+    };
+
+    // Include project metadata in the request
+    const enhancedData = {
+      ...validatedData,
+      project_title: projectTitle,
+      project_uuid: projectMeta.project_uuid,
+      url_slug: projectMeta.url_slug
+    };
+
+    setGenerationRequestData(enhancedData);
     setIsGenerating(true);
     setResumeState(null);
     setShowResumeOption(false);
-    
+
     // Clear any existing state
     BookGenerationStateManager.clearState();
+
+    // Save initial project state
+    ProjectUtils.saveProjectToLocalHistory(projectData);
+
+    // Navigate to the unique URL for live viewing
+    setTimeout(() => {
+      navigate(`${projectMeta.unique_url}?view=live`);
+    }, 1000);
   };
 
   const handleResumeGeneration = () => {
@@ -102,14 +135,35 @@ const BookGeneration = () => {
       { usageId, bookData, requestData: generationRequestData },
       ...prev
     ]);
-    
+
     setIsGenerating(false);
     BookGenerationStateManager.clearState();
-    
+
+    // Create project metadata for unique URL access
+    const projectTitle = bookData?.book_metadata?.title || generationRequestData?.book_title || 'AI Generated Book';
+    const projectMeta = ProjectUtils.createProjectIdentifiers(projectTitle);
+
+    // Save to local history for quick access
+    ProjectUtils.saveProjectToLocalHistory({
+      usage_id: usageId,
+      project_uuid: projectMeta.project_uuid,
+      url_slug: projectMeta.url_slug,
+      project_title: projectTitle,
+      unique_url: projectMeta.unique_url,
+      shareable_url: projectMeta.shareable_url,
+      created_at: new Date().toISOString(),
+      status: 'completed'
+    });
+
     toast({
       title: "Success",
-      description: "Book generated successfully! You can download the PDF or view it anytime.",
+      description: "Book generated successfully! Redirecting to your project...",
     });
+
+    // Navigate to the unique URL
+    setTimeout(() => {
+      navigate(projectMeta.unique_url);
+    }, 2000);
   };
 
   const handleGenerationError = (error: string) => {
