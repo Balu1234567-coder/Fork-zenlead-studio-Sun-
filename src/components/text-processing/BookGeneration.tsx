@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,6 +14,7 @@ import { ProjectUtils } from "@/lib/projectUtils";
 const BookGeneration = () => {
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationRequestData, setGenerationRequestData] = useState<any>(null);
   const [generatedBooks, setGeneratedBooks] = useState<Array<{ usageId: string; bookData: any; requestData: any }>>([]);
@@ -79,7 +80,15 @@ const BookGeneration = () => {
     const projectTitle = validatedData.book_title || validatedData.concept || ProjectUtils.generateProjectTitle(validatedData.concept);
     const projectMeta = ProjectUtils.createProjectIdentifiers(projectTitle);
 
-    // Save project metadata immediately
+    // Include project metadata in the request - this will be sent to backend
+    const enhancedData = {
+      ...validatedData,
+      project_title: projectTitle,
+      project_uuid: projectMeta.project_uuid,
+      url_slug: projectMeta.url_slug
+    };
+
+    // Save project metadata immediately to local storage for quick access
     const projectData = {
       usage_id: '', // Will be set when we get response from backend
       project_uuid: projectMeta.project_uuid,
@@ -91,14 +100,6 @@ const BookGeneration = () => {
       status: 'processing'
     };
 
-    // Include project metadata in the request
-    const enhancedData = {
-      ...validatedData,
-      project_title: projectTitle,
-      project_uuid: projectMeta.project_uuid,
-      url_slug: projectMeta.url_slug
-    };
-
     setGenerationRequestData(enhancedData);
     setIsGenerating(true);
     setResumeState(null);
@@ -107,13 +108,17 @@ const BookGeneration = () => {
     // Clear any existing state
     BookGenerationStateManager.clearState();
 
-    // Save initial project state
+    // Save initial project state to local storage for quick recovery
     ProjectUtils.saveProjectToLocalHistory(projectData);
 
-    // Navigate to the unique URL for live viewing
-    setTimeout(() => {
-      navigate(`${projectMeta.unique_url}?view=live`);
-    }, 1000);
+    // Navigate to the unique URL for live viewing immediately
+    navigate(`${projectMeta.unique_url}?view=live`);
+
+    toast({
+      title: "Generation Started",
+      description: `Starting generation for "${projectTitle}". You can refresh this page safely.`,
+      duration: 3000,
+    });
   };
 
   const handleResumeGeneration = () => {
@@ -139,31 +144,29 @@ const BookGeneration = () => {
     setIsGenerating(false);
     BookGenerationStateManager.clearState();
 
-    // Create project metadata for unique URL access
+    // Get the project metadata that should already exist (from the generation request)
     const projectTitle = bookData?.book_metadata?.title || generationRequestData?.book_title || 'AI Generated Book';
-    const projectMeta = ProjectUtils.createProjectIdentifiers(projectTitle);
+    const urlSlug = generationRequestData?.url_slug || ProjectUtils.generateUrlSlug(projectTitle);
 
-    // Save to local history for quick access
-    ProjectUtils.saveProjectToLocalHistory({
-      usage_id: usageId,
-      project_uuid: projectMeta.project_uuid,
-      url_slug: projectMeta.url_slug,
-      project_title: projectTitle,
-      unique_url: projectMeta.unique_url,
-      shareable_url: projectMeta.shareable_url,
-      created_at: new Date().toISOString(),
-      status: 'completed'
-    });
+    // Update local history with completion
+    const history = ProjectUtils.getLocalProjectHistory();
+    const existingProject = history.find(p => p.project_uuid === generationRequestData?.project_uuid);
+
+    if (existingProject) {
+      existingProject.usage_id = usageId;
+      existingProject.status = 'completed';
+      existingProject.last_accessed = new Date().toISOString();
+      ProjectUtils.saveProjectToLocalHistory(existingProject);
+    }
 
     toast({
       title: "Success",
-      description: "Book generated successfully! Redirecting to your project...",
+      description: "Book generated successfully! Your unique URL is preserved.",
     });
 
-    // Navigate to the unique URL
-    setTimeout(() => {
-      navigate(projectMeta.unique_url);
-    }, 2000);
+    // Stay on the same unique URL, just remove the live view parameter
+    const currentUrl = window.location.pathname;
+    navigate(currentUrl, { replace: true });
   };
 
   const handleGenerationError = (error: string) => {
