@@ -28,6 +28,7 @@ import { BookApiService } from "@/lib/bookApi";
 import EnhancedStreamingBookGenerator from "@/components/EnhancedStreamingBookGenerator";
 import { BookContentRenderer } from "@/components/BookContentRenderer";
 import UniqueUrlHandler, { useUniqueUrl } from "@/components/UniqueUrlHandler";
+import { ProjectUtils } from "@/lib/projectUtils";
 
 interface GenerationState {
   usage_id: string;
@@ -64,12 +65,8 @@ interface BookData {
 }
 
 const BookViewer: React.FC = () => {
-<<<<<<< HEAD
-  const { urlSlug, projectId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
-=======
   const { urlSlug, projectId, uniqueId } = useParams<{ urlSlug?: string; projectId?: string; uniqueId?: string }>();
   const [searchParams] = useSearchParams();
->>>>>>> refs/remotes/origin/ai_main_ac699225e90b
   const navigate = useNavigate();
   const { toast } = useToast();
   const { identifier, viewMode, action, updateViewMode, saveState } = useUniqueUrl();
@@ -82,17 +79,11 @@ const BookViewer: React.FC = () => {
   const [chapters, setChapters] = useState<any[]>([]);
   const [projectResolved, setProjectResolved] = useState(false);
 
-  // Use URL slug from params or identifier from hook
-  const currentIdentifier = urlSlug || projectId || identifier;
-
-<<<<<<< HEAD
+  // Get the identifier - prioritize uniqueId from /text/long-form-book/:uniqueId route
+  const currentIdentifier = uniqueId || urlSlug || projectId || identifier;
+  
   // Extract possible usage ID from identifier for fallback
   const extractedUsageId = currentIdentifier?.includes('-') ? currentIdentifier.split('-').pop() : currentIdentifier;
-=======
-  // Get the identifier - prioritize uniqueId from /text/long-form-book/:uniqueId route
-  const identifier = uniqueId || urlSlug || projectId || window.location.pathname.slice(1);
-  const usageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
->>>>>>> refs/remotes/origin/ai_main_ac699225e90b
 
   // Log for debugging
   console.log('BookViewer identifiers:', {
@@ -100,8 +91,8 @@ const BookViewer: React.FC = () => {
     urlSlug,
     projectId,
     pathName: window.location.pathname,
-    finalIdentifier: identifier,
-    extractedUsageId: usageId
+    finalIdentifier: currentIdentifier,
+    extractedUsageId: extractedUsageId
   });
 
   useEffect(() => {
@@ -111,10 +102,6 @@ const BookViewer: React.FC = () => {
   }, [currentIdentifier, projectResolved]);
 
   useEffect(() => {
-<<<<<<< HEAD
-    // Handle view parameter
-    if (viewMode === 'live' && state?.status === 'processing') {
-=======
     // Handle view parameter - show live view for any processing status
     const isProcessing = state?.status === 'processing' ||
                         state?.status === 'generating' ||
@@ -122,11 +109,10 @@ const BookViewer: React.FC = () => {
                         state?.current_operation ||
                         (state?.progress && state?.progress < 100);
 
-    if (viewParam === 'live' && isProcessing) {
+    if (viewMode === 'live' && isProcessing) {
       setView('generator');
-    } else if (viewParam === 'live') {
+    } else if (viewMode === 'live') {
       // If explicitly requesting live view but not processing, still show it
->>>>>>> refs/remotes/origin/ai_main_ac699225e90b
       setView('generator');
     }
   }, [viewMode, state]);
@@ -143,7 +129,7 @@ const BookViewer: React.FC = () => {
   const handleProjectResolved = (projectData: any) => {
     console.log('Project resolved via UniqueUrlHandler:', projectData);
     setProjectResolved(true);
-
+    
     // Save current state to URL state manager
     if (saveState) {
       saveState({
@@ -164,29 +150,25 @@ const BookViewer: React.FC = () => {
   };
 
   const loadBookState = async () => {
-<<<<<<< HEAD
-    if (!currentIdentifier) return;
-=======
-    if (!identifier) {
+    if (!currentIdentifier) {
       setError('No project identifier provided');
       setLoading(false);
       return;
     }
 
     // Validate identifier format to prevent API calls with invalid data
-    if (identifier.includes('text/long-form-book') ||
-        identifier.includes('/') ||
-        identifier.length < 3 ||
-        identifier === 'undefined' ||
-        identifier === 'null') {
+    if (currentIdentifier.includes('text/long-form-book') ||
+        currentIdentifier.includes('/') ||
+        currentIdentifier.length < 3 ||
+        currentIdentifier === 'undefined' ||
+        currentIdentifier === 'null') {
       setError('Invalid project identifier format');
       setLoading(false);
-      console.error('Invalid identifier detected:', identifier);
+      console.error('Invalid identifier detected:', currentIdentifier);
       return;
     }
 
-    console.log('Loading book state for identifier:', identifier);
->>>>>>> refs/remotes/origin/ai_main_ac699225e90b
+    console.log('Loading book state for identifier:', currentIdentifier);
 
     try {
       setLoading(true);
@@ -257,9 +239,12 @@ const BookViewer: React.FC = () => {
         }
       }
 
-      if (!currentUsageId) {
-        throw new Error('Project not found');
+      // Validate currentUsageId before making API call
+      if (!currentUsageId || currentUsageId.length < 8) {
+        throw new Error(`Invalid usage ID: ${currentUsageId}. Cannot fetch status.`);
       }
+
+      console.log('Attempting to fetch status for usageId:', currentUsageId);
 
       // Get enhanced state from new backend endpoint
       let enhancedState: GenerationState;
@@ -310,19 +295,12 @@ const BookViewer: React.FC = () => {
       } catch (stateError) {
         console.warn('Enhanced state not available, falling back to basic status:', stateError);
 
-        // Validate currentUsageId before making API call
-        if (!currentUsageId || currentUsageId.length < 8) {
-          throw new Error(`Invalid usage ID: ${currentUsageId}. Cannot fetch status.`);
-        }
-
-        console.log('Attempting to fetch status for usageId:', currentUsageId);
-
         // Fallback to existing status endpoint
         statusResponse = await BookApiService.getGenerationStatus(currentUsageId);
 
         // Create fallback state with proper URL slug
         const fallbackUrlSlug = currentIdentifier || urlSlug || `book-${currentUsageId?.slice(0, 8) || 'unknown'}`;
-
+        
         enhancedState = {
           usage_id: currentUsageId || '',
           status: statusResponse?.status || 'unknown',
@@ -342,7 +320,6 @@ const BookViewer: React.FC = () => {
 
       setState(enhancedState);
 
-<<<<<<< HEAD
       // Update local storage with latest state if we resolved from backend
       if (resolvedFromBackend && projectResponse) {
         ProjectUtils.saveProjectToLocalHistory({
@@ -356,7 +333,8 @@ const BookViewer: React.FC = () => {
           status: enhancedState.status,
           last_accessed: new Date().toISOString()
         } as any);
-=======
+      }
+
       // Auto-set view to generator for processing projects (unless already viewing)
       const isProcessing = enhancedState.status === 'processing' ||
                           enhancedState.status === 'generating' ||
@@ -366,7 +344,6 @@ const BookViewer: React.FC = () => {
 
       if (isProcessing && view === 'viewer') {
         setView('generator');
->>>>>>> refs/remotes/origin/ai_main_ac699225e90b
       }
 
       // If completed, try to load the full book data using new stored endpoint
@@ -552,7 +529,7 @@ const BookViewer: React.FC = () => {
 
   if (loading) {
     return (
-      <UniqueUrlHandler
+      <UniqueUrlHandler 
         onProjectResolved={handleProjectResolved}
         onStateRecovered={handleStateRecovered}
       >
@@ -571,7 +548,7 @@ const BookViewer: React.FC = () => {
 
   if (error || !state) {
     return (
-      <UniqueUrlHandler
+      <UniqueUrlHandler 
         onProjectResolved={handleProjectResolved}
         onStateRecovered={handleStateRecovered}
       >
@@ -606,7 +583,7 @@ const BookViewer: React.FC = () => {
 
   if (view === 'generator' || (isActivelyProcessing && !bookData)) {
     return (
-      <UniqueUrlHandler
+      <UniqueUrlHandler 
         onProjectResolved={handleProjectResolved}
         onStateRecovered={handleStateRecovered}
       >
@@ -636,212 +613,212 @@ const BookViewer: React.FC = () => {
   }
 
   return (
-    <UniqueUrlHandler
+    <UniqueUrlHandler 
       onProjectResolved={handleProjectResolved}
       onStateRecovered={handleStateRecovered}
     >
       <div className="min-h-screen bg-background">
         <Navbar />
         <main className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate('/book-projects')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                {getStatusIcon(state.status)}
-                {bookData?.book_metadata?.title || 'Book Project'}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Created {new Date(state.created_at).toLocaleDateString()}
-              </p>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={() => navigate('/book-projects')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  {getStatusIcon(state.status)}
+                  {bookData?.book_metadata?.title || 'Book Project'}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Created {new Date(state.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Badge variant={state.status === 'completed' ? 'default' : 'secondary'}>
+                {state.status}
+              </Badge>
+              
+              {state.can_pause && (
+                <Button size="sm" variant="outline" onClick={() => handleAction('pause')}>
+                  <Pause className="h-4 w-4 mr-2" />
+                  Pause
+                </Button>
+              )}
+              
+              {state.can_resume && (
+                <Button size="sm" onClick={() => handleAction('resume')}>
+                  <Play className="h-4 w-4 mr-2" />
+                  Resume
+                </Button>
+              )}
+              
+              {state.status === 'completed' && (
+                <>
+                  <Button size="sm" variant="outline" onClick={() => handleAction('download')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleAction('share')}>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
+                  </Button>
+                </>
+              )}
+              
+              <Button size="sm" variant="outline" onClick={loadBookState}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Badge variant={state.status === 'completed' ? 'default' : 'secondary'}>
-              {state.status}
-            </Badge>
-            
-            {state.can_pause && (
-              <Button size="sm" variant="outline" onClick={() => handleAction('pause')}>
-                <Pause className="h-4 w-4 mr-2" />
-                Pause
-              </Button>
-            )}
-            
-            {state.can_resume && (
-              <Button size="sm" onClick={() => handleAction('resume')}>
-                <Play className="h-4 w-4 mr-2" />
-                Resume
-              </Button>
-            )}
-            
-            {state.status === 'completed' && (
-              <>
-                <Button size="sm" variant="outline" onClick={() => handleAction('download')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => handleAction('share')}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-              </>
-            )}
-            
-            <Button size="sm" variant="outline" onClick={loadBookState}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
 
-        {/* Progress Card for Active Generation */}
-        {state.status === 'processing' && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Generation in Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Overall Progress</span>
-                    <span>{state.progress}%</span>
-                  </div>
-                  <Progress value={state.progress} className="h-2" />
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <strong>Current Chapter:</strong> {state.current_chapter}
-                  </div>
-                  <div>
-                    <strong>Last Update:</strong> {new Date(state.updated_at).toLocaleTimeString()}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => setView('generator')}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Watch Live
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Book Content */}
-        {bookData && chapters.length > 0 && (
-          <div className="space-y-8">
-            {/* Book Metadata */}
-            <Card>
+          {/* Progress Card for Active Generation */}
+          {state.status === 'processing' && (
+            <Card className="mb-8">
               <CardHeader>
-                <CardTitle>Book Information</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Generation in Progress
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="space-y-4">
                   <div>
-                    <strong>Author:</strong> {bookData.book_metadata?.author || 'AI Generated'}
+                    <div className="flex justify-between text-sm mb-2">
+                      <span>Overall Progress</span>
+                      <span>{state.progress}%</span>
+                    </div>
+                    <Progress value={state.progress} className="h-2" />
                   </div>
-                  <div>
-                    <strong>Genre:</strong> {bookData.book_metadata?.genre || 'N/A'}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <strong>Current Chapter:</strong> {state.current_chapter}
+                    </div>
+                    <div>
+                      <strong>Last Update:</strong> {new Date(state.updated_at).toLocaleTimeString()}
+                    </div>
                   </div>
-                  <div>
-                    <strong>Total Words:</strong> {bookData.book_metadata?.total_words?.toLocaleString() || '0'}
-                  </div>
-                  <div>
-                    <strong>Total Images:</strong> {bookData.book_metadata?.total_images || '0'}
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => setView('generator')}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Watch Live
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Table of Contents */}
-            {bookData.table_of_contents && bookData.table_of_contents.length > 0 && (
+          {/* Book Content */}
+          {bookData && chapters.length > 0 && (
+            <div className="space-y-8">
+              {/* Book Metadata */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Table of Contents</CardTitle>
+                  <CardTitle>Book Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {bookData.table_of_contents.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                        <span className="font-medium">Chapter {item.chapter_number}: {item.title}</span>
-                        <span className="text-sm text-muted-foreground">Page {item.page}</span>
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <strong>Author:</strong> {bookData.book_metadata?.author || 'AI Generated'}
+                    </div>
+                    <div>
+                      <strong>Genre:</strong> {bookData.book_metadata?.genre || 'N/A'}
+                    </div>
+                    <div>
+                      <strong>Total Words:</strong> {bookData.book_metadata?.total_words?.toLocaleString() || '0'}
+                    </div>
+                    <div>
+                      <strong>Total Images:</strong> {bookData.book_metadata?.total_images || '0'}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Chapters */}
-            <div className="space-y-12">
-              {chapters.map((chapter, index) => (
-                <div key={chapter.chapter_number || index}>
-                  <BookContentRenderer
-                    content={chapter.full_content || chapter.content}
-                    images={chapter.images || []}
-                    title={chapter.title}
-                    chapterNumber={chapter.chapter_number}
-                    wordCount={chapter.word_count || 0}
-                  />
-                </div>
-              ))}
+              {/* Table of Contents */}
+              {bookData.table_of_contents && bookData.table_of_contents.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Table of Contents</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {bookData.table_of_contents.map((item, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                          <span className="font-medium">Chapter {item.chapter_number}: {item.title}</span>
+                          <span className="text-sm text-muted-foreground">Page {item.page}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Chapters */}
+              <div className="space-y-12">
+                {chapters.map((chapter, index) => (
+                  <div key={chapter.chapter_number || index}>
+                    <BookContentRenderer
+                      content={chapter.full_content || chapter.content}
+                      images={chapter.images || []}
+                      title={chapter.title}
+                      chapterNumber={chapter.chapter_number}
+                      wordCount={chapter.word_count || 0}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Empty State */}
-        {state.status === 'completed' && (!bookData || chapters.length === 0) && (
-          <div className="text-center py-20">
-            <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-            <h2 className="text-xl font-semibold mb-4">Book Content Not Available</h2>
-            <p className="text-muted-foreground mb-8">
-              The book generation is marked as complete, but the content couldn't be loaded.
-            </p>
-            <Button onClick={loadBookState}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry Loading
-            </Button>
-          </div>
-        )}
+          {/* Empty State */}
+          {state.status === 'completed' && (!bookData || chapters.length === 0) && (
+            <div className="text-center py-20">
+              <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+              <h2 className="text-xl font-semibold mb-4">Book Content Not Available</h2>
+              <p className="text-muted-foreground mb-8">
+                The book generation is marked as complete, but the content couldn't be loaded.
+              </p>
+              <Button onClick={loadBookState}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry Loading
+              </Button>
+            </div>
+          )}
 
-        {/* Pending/Failed States */}
-        {(state.status === 'pending' || state.status === 'failed') && (
-          <div className="text-center py-20">
-            {state.status === 'pending' ? (
-              <>
-                <Pause className="h-16 w-16 text-yellow-500 mx-auto mb-6" />
-                <h2 className="text-xl font-semibold mb-4">Generation Paused</h2>
-                <p className="text-muted-foreground mb-8">
-                  This book generation was paused. You can resume it anytime.
-                </p>
-                <Button onClick={() => handleAction('resume')}>
-                  <Play className="h-4 w-4 mr-2" />
-                  Resume Generation
-                </Button>
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-6" />
-                <h2 className="text-xl font-semibold mb-4">Generation Failed</h2>
-                <p className="text-muted-foreground mb-8">
-                  Something went wrong during generation. You can try creating a new book.
-                </p>
-                <Button onClick={() => navigate('/ai-studio/long-form-book')}>
-                  Create New Book
-                </Button>
-              </>
-            )}
-          </div>
-        )}
+          {/* Pending/Failed States */}
+          {(state.status === 'pending' || state.status === 'failed') && (
+            <div className="text-center py-20">
+              {state.status === 'pending' ? (
+                <>
+                  <Pause className="h-16 w-16 text-yellow-500 mx-auto mb-6" />
+                  <h2 className="text-xl font-semibold mb-4">Generation Paused</h2>
+                  <p className="text-muted-foreground mb-8">
+                    This book generation was paused. You can resume it anytime.
+                  </p>
+                  <Button onClick={() => handleAction('resume')}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Resume Generation
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-6" />
+                  <h2 className="text-xl font-semibold mb-4">Generation Failed</h2>
+                  <p className="text-muted-foreground mb-8">
+                    Something went wrong during generation. You can try creating a new book.
+                  </p>
+                  <Button onClick={() => navigate('/ai-studio/long-form-book')}>
+                    Create New Book
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </main>
         <Footer />
       </div>
