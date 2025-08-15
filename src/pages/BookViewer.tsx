@@ -84,10 +84,10 @@ const BookViewer: React.FC = () => {
   const extractedUsageId = currentIdentifier?.includes('-') ? currentIdentifier.split('-').pop() : currentIdentifier;
 
   useEffect(() => {
-    if (identifier) {
+    if (currentIdentifier && projectResolved) {
       loadBookState();
     }
-  }, [identifier]);
+  }, [currentIdentifier, projectResolved]);
 
   useEffect(() => {
     // Handle view parameter
