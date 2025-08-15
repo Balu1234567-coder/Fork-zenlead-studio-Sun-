@@ -48,6 +48,11 @@ export interface HeartbeatData {
 export class EnhancedBookApiService {
   private static getAuthHeaders() {
     const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      console.warn('No auth token found in localStorage');
+    }
+
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
