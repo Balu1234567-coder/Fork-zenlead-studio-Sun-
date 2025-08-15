@@ -171,6 +171,16 @@ const App = () => {
                     </AuthenticatedRoute>
                   }
                 />
+
+                {/* Long Form Book with Unique ID Routes */}
+                <Route
+                  path="/text/long-form-book/:uniqueId"
+                  element={
+                    <AuthenticatedRoute>
+                      <BookViewer />
+                    </AuthenticatedRoute>
+                  }
+                />
                 <Route
                   path="/text-processing"
                   element={
