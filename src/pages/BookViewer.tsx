@@ -506,27 +506,32 @@ const BookViewer: React.FC = () => {
   // Show generator view for active generation or resume
   if (view === 'generator' || (state.status === 'processing' && !bookData)) {
     return (
-      <div className="min-h-screen bg-background">
-        <EnhancedStreamingBookGenerator
-          requestData={{}} // You'd pass the original request data here
-          onComplete={(usageId, data) => {
-            setView('viewer');
-            loadBookState();
-            toast({
-              title: "Success",
-              description: "Book generation completed!",
-            });
-          }}
-          onError={(error) => {
-            toast({
-              title: "Error",
-              description: error,
-              variant: "destructive"
-            });
-          }}
-          onCancel={() => setView('viewer')}
-        />
-      </div>
+      <UniqueUrlHandler
+        onProjectResolved={handleProjectResolved}
+        onStateRecovered={handleStateRecovered}
+      >
+        <div className="min-h-screen bg-background">
+          <EnhancedStreamingBookGenerator
+            requestData={{}} // You'd pass the original request data here
+            onComplete={(usageId, data) => {
+              setView('viewer');
+              loadBookState();
+              toast({
+                title: "Success",
+                description: "Book generation completed!",
+              });
+            }}
+            onError={(error) => {
+              toast({
+                title: "Error",
+                description: error,
+                variant: "destructive"
+              });
+            }}
+            onCancel={() => setView('viewer')}
+          />
+        </div>
+      </UniqueUrlHandler>
     );
   }
 
