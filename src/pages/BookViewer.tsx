@@ -521,9 +521,13 @@ const BookViewer: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
+    <UniqueUrlHandler
+      onProjectResolved={handleProjectResolved}
+      onStateRecovered={handleStateRecovered}
+    >
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -723,9 +727,10 @@ const BookViewer: React.FC = () => {
             )}
           </div>
         )}
-      </main>
-      <Footer />
-    </div>
+        </main>
+        <Footer />
+      </div>
+    </UniqueUrlHandler>
   );
 };
 
