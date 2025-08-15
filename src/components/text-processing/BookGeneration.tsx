@@ -111,9 +111,9 @@ const BookGeneration = () => {
     // Save initial project state
     ProjectUtils.saveProjectToLocalHistory(projectData);
 
-    // Navigate to the unique URL for live viewing
+    // Navigate to the unique URL for live viewing with /text/long-form-book prefix
     setTimeout(() => {
-      navigate(`${projectMeta.unique_url}?view=live`);
+      navigate(`/text/long-form-book/${projectMeta.url_slug}?view=live`);
     }, 1000);
   };
 
