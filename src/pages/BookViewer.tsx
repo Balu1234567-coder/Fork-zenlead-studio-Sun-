@@ -91,10 +91,10 @@ const BookViewer: React.FC = () => {
 
   useEffect(() => {
     // Handle view parameter
-    if (viewParam === 'live' && state?.status === 'processing') {
+    if (viewMode === 'live' && state?.status === 'processing') {
       setView('generator');
     }
-  }, [viewParam, state]);
+  }, [viewMode, state]);
 
   useEffect(() => {
     // Handle action parameters
