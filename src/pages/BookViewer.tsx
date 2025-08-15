@@ -78,8 +78,8 @@ const BookViewer: React.FC = () => {
   const action = searchParams.get('action');
   const viewParam = searchParams.get('view');
 
-  // Get the identifier - could be urlSlug, projectId, or uniqueId from URL path
-  const identifier = urlSlug || projectId || window.location.pathname.slice(1);
+  // Get the identifier - prioritize uniqueId from /text/long-form-book/:uniqueId route
+  const identifier = uniqueId || urlSlug || projectId || window.location.pathname.slice(1);
   const usageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
 
   useEffect(() => {
