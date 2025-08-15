@@ -106,7 +106,7 @@ const BookViewer: React.FC = () => {
   }, [action, state]);
 
   const loadBookState = async () => {
-    if (!identifier) return;
+    if (!currentIdentifier) return;
 
     try {
       setLoading(true);
