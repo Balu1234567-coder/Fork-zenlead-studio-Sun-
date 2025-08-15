@@ -51,6 +51,22 @@ const BookGeneration = () => {
     // Skip if we're handling template auto-start
     if (autoStartRequested) return;
 
+    // Clear any potentially corrupted state first
+    try {
+      const savedState = localStorage.getItem('book_generation_state');
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        // Check if saved state has invalid usage_id
+        if (!parsed.usageId || parsed.usageId.length < 8) {
+          console.log('Clearing invalid book generation state');
+          localStorage.removeItem('book_generation_state');
+        }
+      }
+    } catch (error) {
+      console.log('Clearing corrupted book generation state');
+      localStorage.removeItem('book_generation_state');
+    }
+
     const activeGeneration = BookGenerationUtils.hasActiveGeneration();
 
     if (activeGeneration.active) {
