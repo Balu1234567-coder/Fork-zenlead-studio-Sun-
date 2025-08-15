@@ -268,7 +268,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
           break;
 
         case 'view':
-          navigate(`/book-generation/${project.url_slug}`);
+          navigate(`/${project.url_slug}`);
           break;
 
         case 'download_partial':
