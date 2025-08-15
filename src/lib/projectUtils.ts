@@ -1,4 +1,11 @@
-import { v4 as uuidv4 } from 'uuid';
+// Simple UUID v4 generator (no external dependency)
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 export interface ProjectMetadata {
   usage_id: string;
@@ -39,7 +46,7 @@ export class ProjectUtils {
     unique_url: string;
     shareable_url: string;
   } {
-    const project_uuid = uuidv4();
+    const project_uuid = generateUUID();
     const url_slug = this.generateUrlSlug(title, project_uuid);
     
     return {
