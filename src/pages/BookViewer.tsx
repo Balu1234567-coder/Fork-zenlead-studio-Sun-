@@ -82,6 +82,16 @@ const BookViewer: React.FC = () => {
   const identifier = uniqueId || urlSlug || projectId || window.location.pathname.slice(1);
   const usageId = identifier?.includes('-') ? identifier.split('-').pop() : identifier;
 
+  // Log for debugging
+  console.log('BookViewer identifiers:', {
+    uniqueId,
+    urlSlug,
+    projectId,
+    pathName: window.location.pathname,
+    finalIdentifier: identifier,
+    extractedUsageId: usageId
+  });
+
   useEffect(() => {
     if (identifier) {
       loadBookState();
