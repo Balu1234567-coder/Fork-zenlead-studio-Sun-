@@ -130,6 +130,18 @@ const BookViewer: React.FC = () => {
       return;
     }
 
+    // Validate identifier format to prevent API calls with invalid data
+    if (identifier.includes('text/long-form-book') ||
+        identifier.includes('/') ||
+        identifier.length < 3 ||
+        identifier === 'undefined' ||
+        identifier === 'null') {
+      setError('Invalid project identifier format');
+      setLoading(false);
+      console.error('Invalid identifier detected:', identifier);
+      return;
+    }
+
     console.log('Loading book state for identifier:', identifier);
 
     try {
