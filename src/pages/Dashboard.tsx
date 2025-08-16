@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
+import { DashboardLayout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -161,9 +161,9 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
+    <DashboardLayout>
+      <div className="bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
@@ -463,8 +463,9 @@ const Dashboard = () => {
             </LockedFeature>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
