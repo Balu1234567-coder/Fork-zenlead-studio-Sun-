@@ -183,6 +183,9 @@ const Dashboard = () => {
           </p>
         </div>
 
+        {/* Project URL Demo */}
+        <ProjectUrlDemo />
+
         {/* Top Models Section */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
