@@ -161,9 +161,9 @@ const Dashboard = () => {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <Navbar />
+      <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
@@ -463,9 +463,8 @@ const Dashboard = () => {
             </LockedFeature>
           </TabsContent>
         </Tabs>
-        </div>
-      </div>
-    </DashboardLayout>
+      </main>
+    </div>
   );
 };
 
