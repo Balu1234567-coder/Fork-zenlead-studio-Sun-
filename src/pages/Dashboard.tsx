@@ -12,6 +12,7 @@ import { ExcelUpload } from "@/components/ExcelUpload";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { VoiceSelector } from "@/components/VoiceSelector";
 import { LockedFeature } from "@/components/ui/locked-feature";
+import ProjectUrlDemo from "@/components/ProjectUrlDemo";
 import { 
   Mic, 
   FileText, 
