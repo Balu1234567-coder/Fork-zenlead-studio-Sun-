@@ -217,22 +217,19 @@ const ProjectPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <LayoutWithSidebar>
         <div className="container mx-auto px-4 py-12">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         </div>
-        <Footer />
-      </div>
+      </LayoutWithSidebar>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <LayoutWithSidebar>
         <div className="container mx-auto px-4 py-12">
           <Alert variant="destructive">
             <XCircle className="h-4 w-4" />
@@ -240,16 +237,15 @@ const ProjectPage: React.FC = () => {
               {error || 'Project not found'}
             </AlertDescription>
           </Alert>
-          <Button 
-            onClick={() => navigate('/dashboard')} 
+          <Button
+            onClick={() => navigate('/dashboard')}
             className="mt-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
         </div>
-        <Footer />
-      </div>
+      </LayoutWithSidebar>
     );
   }
 
@@ -258,8 +254,7 @@ const ProjectPage: React.FC = () => {
   const canCancel = project.navigation.can_cancel && isProcessing;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <LayoutWithSidebar>
       
       {/* Project Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -525,9 +520,7 @@ const ProjectPage: React.FC = () => {
           )}
         </Tabs>
       </div>
-      
-      <Footer />
-    </div>
+    </LayoutWithSidebar>
   );
 };
 
