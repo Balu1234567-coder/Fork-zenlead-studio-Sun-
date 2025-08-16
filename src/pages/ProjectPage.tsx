@@ -553,22 +553,19 @@ const ProjectPage: React.FC = () => {
 
   if (state.loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <ProjectLayout>
         <div className="container mx-auto px-4 py-12">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         </div>
-        <Footer />
-      </div>
+      </ProjectLayout>
     );
   }
 
   if (state.error || !state.project) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <ProjectLayout>
         <div className="container mx-auto px-4 py-12">
           <Alert variant="destructive">
             <XCircle className="h-4 w-4" />
@@ -576,26 +573,23 @@ const ProjectPage: React.FC = () => {
               {state.error || 'Project not found'}
             </AlertDescription>
           </Alert>
-          <Button 
-            onClick={() => navigate('/dashboard')} 
+          <Button
+            onClick={() => navigate('/dashboard')}
             className="mt-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
         </div>
-        <Footer />
-      </div>
+      </ProjectLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <ProjectLayout>
       <ProjectHeader project={state.project} />
       <ProjectContent project={state.project} />
-      <Footer />
-    </div>
+    </ProjectLayout>
   );
 };
 
