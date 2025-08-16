@@ -75,6 +75,10 @@ export class ProjectsApiService {
   
   // Get projects grouped by type
   static async getProjectsByType(): Promise<ApiResponse<ProjectGroup[]>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.getProjectsByType();
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/grouped`, {
         headers: {
@@ -82,11 +86,11 @@ export class ProjectsApiService {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Failed to fetch grouped projects:', error);
