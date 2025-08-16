@@ -1,7 +1,11 @@
 import { Project, ProjectType, ProjectStatus, ProjectsListOptions, ProjectGroup } from '@/types/projects';
+import { MockProjectsService } from './mockProjectsService';
 
 // Base API URL - this should match your backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Use mock data in development or when VITE_USE_MOCK_DATA is true
+const USE_MOCK_DATA = import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA === 'true';
 
 interface ApiResponse<T> {
   success: boolean;
