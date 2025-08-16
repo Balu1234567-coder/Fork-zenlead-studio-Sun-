@@ -25,42 +25,47 @@ export class ProjectsApiService {
   
   // Get all projects for the current user
   static async getAllProjects(options?: ProjectsListOptions): Promise<ApiResponse<ProjectsListResponse>> {
+    // Use mock data in development
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.getAllProjects();
+    }
+
     try {
       const params = new URLSearchParams();
-      
+
       if (options?.filter?.type) {
         params.append('types', options.filter.type.join(','));
       }
-      
+
       if (options?.filter?.status) {
         params.append('statuses', options.filter.status.join(','));
       }
-      
+
       if (options?.filter?.searchQuery) {
         params.append('search', options.filter.searchQuery);
       }
-      
+
       if (options?.sort) {
         params.append('sortField', options.sort.field);
         params.append('sortDirection', options.sort.direction);
       }
-      
+
       if (options?.pagination) {
         params.append('page', options.pagination.page.toString());
         params.append('limit', options.pagination.limit.toString());
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/ai/projects?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Failed to fetch projects:', error);
