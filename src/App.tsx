@@ -239,6 +239,24 @@ const App = () => {
                   }
                 />
 
+                {/* Universal AI Project Routes */}
+                <Route
+                  path="/ai/:projectType/project/:usageId"
+                  element={
+                    <AuthenticatedRoute>
+                      <ProjectPage />
+                    </AuthenticatedRoute>
+                  }
+                />
+                <Route
+                  path="/ai/:projectType/project/:usageId/*"
+                  element={
+                    <AuthenticatedRoute>
+                      <ProjectPage />
+                    </AuthenticatedRoute>
+                  }
+                />
+
                 {/* Catch-all route - redirect internal routes to dashboard, others to 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
