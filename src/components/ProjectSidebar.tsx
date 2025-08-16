@@ -1,533 +1,546 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Project, 
+  ProjectType, 
+  ProjectStatus, 
+  ProjectGroup,
+  PROJECT_TYPE_CONFIG,
+  PROJECT_STATUS_CONFIG 
+} from '@/types/projects';
+import { ProjectsApiService, ProjectUtils } from '@/lib/projectsApiService';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 import {
-  Book,
-  Play,
-  Pause,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  Eye,
-  Download,
-  RefreshCw,
   Plus,
+  Search,
+  Filter,
+  ChevronDown,
+  ChevronRight,
   MoreVertical,
+  Eye,
+  Copy,
+  Trash2,
+  Download,
+  StopCircle,
+  RefreshCw,
+  Book,
+  Image,
+  AudioWaveform,
+  Video,
+  FileText,
+  Mic,
+  Volume2,
+  GraduationCap,
+  Mail,
   Loader2,
-  CreditCard,
-  Calendar,
-  ArrowRight,
-  BookOpen
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { BookApiService } from "@/lib/bookApi";
-import { format } from 'date-fns';
+  CheckCircle,
+  XCircle,
+  Ban,
+  Clock
+} from 'lucide-react';
 
-interface ProjectData {
-  usage_id: string;
-  title: string;
-  status: string;
-  progress: number;
-  current_chapter?: number;
-  total_chapters?: number;
-  created_at: string;
-  last_activity: string;
-  url_slug: string;
-  thumbnail?: string;
-  can_resume: boolean;
-  estimated_completion?: string;
-  is_live: boolean;
-  credits_used: number;
-  word_count?: number;
-  current_operation?: string;
-  quick_actions: string[];
-}
-
-interface SidebarData {
-  active_projects: ProjectData[];
-  recent_projects: ProjectData[];
-  templates: any[];
-  user_stats: {
-    total_books: number;
-    active_generations: number;
-    credits_remaining: number;
-    this_month_usage: number;
-  };
-}
+// Icon mapping
+const iconMap = {
+  Book, Image, AudioWaveform, Video, FileText, Mic, Volume2, GraduationCap, Mail,
+  Search, Loader2, CheckCircle, XCircle, Ban, Clock
+};
 
 interface ProjectSidebarProps {
   isOpen: boolean;
-  onClose: () => void;
+  onToggle: () => void;
   className?: string;
 }
 
-const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, className = "" }) => {
-  const [sidebarData, setSidebarData] = useState<SidebarData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const { toast } = useToast();
+interface SidebarState {
+  projects: Project[];
+  projectGroups: ProjectGroup[];
+  loading: boolean;
+  searchQuery: string;
+  selectedTypes: ProjectType[];
+  selectedStatuses: ProjectStatus[];
+  expandedGroups: Set<ProjectType>;
+  activeProjectId: string | null;
+}
+
+export const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
+  isOpen,
+  onToggle,
+  className = ''
+}) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+  
+  const [state, setState] = useState<SidebarState>({
+    projects: [],
+    projectGroups: [],
+    loading: true,
+    searchQuery: '',
+    selectedTypes: [],
+    selectedStatuses: [],
+    expandedGroups: new Set(),
+    activeProjectId: null
+  });
 
-  // Auto-refresh interval
+  // Load projects on component mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchSidebarData();
-    }, 30000); // Refresh every 30 seconds
-
-    return () => clearInterval(interval);
+    loadProjects();
   }, []);
 
-  const fetchSidebarData = async () => {
-    try {
-      setRefreshing(true);
-
-      // Call your new backend endpoint for real-time dashboard
-      const response = await fetch('/api/ai/long-form-book/dashboard/real-time', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch sidebar data');
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Map the enhanced backend response to frontend structure
-        const enhancedProjects = (result.data.active_generations || []).map((project: any) => ({
-          usage_id: project.usage_id,
-          title: project.title,
-          status: project.status,
-          progress: project.progress || 0,
-          current_chapter: project.current_chapter,
-          total_chapters: project.total_chapters,
-          created_at: project.created_at,
-          last_activity: project.updated_at || project.created_at,
-          url_slug: project.url_slug,
-          thumbnail: project.thumbnail,
-          can_resume: project.can_resume,
-          estimated_completion: project.estimated_completion,
-          is_live: project.status === 'processing',
-          credits_used: project.credits_used,
-          word_count: project.word_count,
-          current_operation: project.current_operation,
-          quick_actions: project.status === 'processing' ? ['pause', 'view_live'] :
-                         project.can_resume ? ['resume', 'view_live'] : ['view_live']
-        }));
-
-        const recentProjects = (result.data.recent_projects || []).map((project: any) => ({
-          usage_id: project.usage_id,
-          title: project.title,
-          status: project.status,
-          progress: project.progress || 0,
-          current_chapter: project.current_chapter,
-          total_chapters: project.total_chapters,
-          created_at: project.created_at,
-          last_activity: project.updated_at || project.created_at,
-          url_slug: project.url_slug,
-          thumbnail: project.thumbnail,
-          can_resume: project.can_resume,
-          estimated_completion: project.estimated_completion,
-          is_live: project.status === 'processing',
-          credits_used: project.credits_used,
-          word_count: project.word_count,
-          current_operation: project.current_operation,
-          quick_actions: project.status === 'completed' ? ['download_pdf', 'view'] :
-                         project.status === 'processing' ? ['pause', 'view_live'] :
-                         project.can_resume ? ['resume'] : ['view']
-        }));
-
-        const data: SidebarData = {
-          active_projects: enhancedProjects,
-          recent_projects: recentProjects,
-          templates: [],
-          user_stats: {
-            total_books: result.data.summary?.total_projects || 0,
-            active_generations: result.data.summary?.active_projects || 0,
-            credits_remaining: 150, // You'd get this from user endpoint
-            this_month_usage: result.data.summary?.total_credits_used || 0
-          }
-        };
-
-        setSidebarData(data);
+  // Update active project based on current URL
+  useEffect(() => {
+    const extractProjectIdFromUrl = () => {
+      const path = location.pathname;
+      
+      // Extract project ID from various URL patterns
+      if (path.includes('/project/')) {
+        return path.split('/project/')[1]?.split('/')[0];
       }
-    } catch (error: any) {
-      console.error('Sidebar fetch error:', error);
+      
+      if (path.includes('/book-generation/')) {
+        const slug = path.split('/book-generation/')[1]?.split('/')[0];
+        // Find project by URL slug
+        const project = state.projects.find(p => p.urlSlug === slug || p.id === slug);
+        return project?.id || null;
+      }
+      
+      return null;
+    };
+
+    const projectId = extractProjectIdFromUrl();
+    setState(prev => ({ ...prev, activeProjectId: projectId }));
+  }, [location.pathname, state.projects]);
+
+  const loadProjects = async () => {
+    try {
+      setState(prev => ({ ...prev, loading: true }));
+      
+      const response = await ProjectsApiService.getProjectsByType();
+      
+      if (response.success) {
+        const allProjects = response.data.flatMap(group => group.projects);
+        setState(prev => ({
+          ...prev,
+          projects: allProjects,
+          projectGroups: response.data,
+          loading: false
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load projects:', error);
       toast({
         title: "Error",
-        description: "Failed to load project data",
+        description: "Failed to load projects",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchSidebarData();
-    }
-  }, [isOpen]);
-
-  const handleProjectClick = (project: ProjectData) => {
-    if (project.status === 'processing' && project.is_live) {
-      // Navigate to live generation view
-      navigate(`/book-generation/${project.url_slug}?view=live`);
-    } else if (project.status === 'completed') {
-      // Navigate to completed book view
-      navigate(`/book-generation/${project.url_slug}`);
-    } else if (project.can_resume) {
-      // Navigate to resume generation
-      navigate(`/book-generation/${project.url_slug}?action=resume`);
-    } else {
-      // Default view
-      navigate(`/book-generation/${project.url_slug}`);
-    }
+  const handleProjectClick = (project: Project) => {
+    const url = ProjectUtils.generateProjectUrl(project);
+    navigate(url);
   };
 
-  const handleQuickAction = async (project: ProjectData, action: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    try {
-      switch (action) {
-        case 'pause':
-          await fetch(`/api/ai/long-form-book/${project.usage_id}/pause`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          toast({
-            title: "Paused",
-            description: `${project.title} has been paused`,
-          });
-          fetchSidebarData();
-          break;
-          
-        case 'view_live':
-          navigate(`/book-generation/${project.url_slug}?view=live`);
-          break;
-          
-        case 'download_pdf':
-          try {
-            const response = await fetch(`/api/ai/long-form-book/${project.usage_id}/pdf`, {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-                'Content-Type': 'application/json'
-              }
-            });
+  const handleNewProject = () => {
+    // Show project type selection dropdown or navigate to dashboard
+    navigate('/dashboard');
+  };
 
-            if (response.ok) {
-              const result = await response.json();
-              if (result.success && result.data.pdf_base64) {
-                const link = document.createElement('a');
-                link.href = `data:application/pdf;base64,${result.data.pdf_base64}`;
-                link.download = result.data.filename || `${project.title}.pdf`;
-                link.click();
-
-                toast({
-                  title: "Downloaded",
-                  description: "PDF downloaded successfully!",
-                });
-              }
-            }
-          } catch (error) {
+  const handleProjectAction = async (action: string, project: Project) => {
+    switch (action) {
+      case 'view':
+        handleProjectClick(project);
+        break;
+        
+      case 'duplicate':
+        try {
+          const response = await ProjectsApiService.duplicateProject(project.id);
+          if (response.success) {
             toast({
-              title: "Error",
-              description: "Failed to download PDF",
-              variant: "destructive"
+              title: "Success",
+              description: "Project duplicated successfully"
             });
+            loadProjects();
           }
-          break;
-
-        case 'resume':
-          await fetch(`/api/ai/long-form-book/${project.usage_id}/resume`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
+        } catch (error) {
           toast({
-            title: "Resumed",
-            description: `${project.title} generation resumed`,
+            title: "Error",
+            description: "Failed to duplicate project",
+            variant: "destructive"
           });
-          navigate(`/book-generation/${project.url_slug}?view=live`);
-          break;
-
-        case 'view':
-          navigate(`/book-generation/${project.url_slug}`);
-          break;
-
-        case 'download_partial':
-          // Download partial content
+        }
+        break;
+        
+      case 'delete':
+        try {
+          const response = await ProjectsApiService.deleteProject(project.id);
+          if (response.success) {
+            toast({
+              title: "Success",
+              description: "Project deleted successfully"
+            });
+            loadProjects();
+          }
+        } catch (error) {
           toast({
-            title: "Downloading",
-            description: "Preparing partial content download...",
+            title: "Error",
+            description: "Failed to delete project",
+            variant: "destructive"
           });
-          break;
-          
-        default:
-          break;
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error", 
-        description: `Failed to ${action}: ${error.message}`,
-        variant: "destructive"
-      });
+        }
+        break;
+        
+      case 'cancel':
+        try {
+          const response = await ProjectsApiService.cancelProject(project.id);
+          if (response.success) {
+            toast({
+              title: "Success",
+              description: "Project cancelled successfully"
+            });
+            loadProjects();
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to cancel project",
+            variant: "destructive"
+          });
+        }
+        break;
     }
   };
 
-  const getStatusIcon = (status: string, isLive: boolean = false) => {
-    if (isLive) {
-      return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+  const toggleGroup = (type: ProjectType) => {
+    setState(prev => {
+      const newExpanded = new Set(prev.expandedGroups);
+      if (newExpanded.has(type)) {
+        newExpanded.delete(type);
+      } else {
+        newExpanded.add(type);
+      }
+      return { ...prev, expandedGroups: newExpanded };
+    });
+  };
+
+  const filteredGroups = state.projectGroups.filter(group => {
+    // Filter by selected types
+    if (state.selectedTypes.length > 0 && !state.selectedTypes.includes(group.type)) {
+      return false;
     }
     
-    switch (status) {
-      case 'processing':
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'failed':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'paused':
-        return <Pause className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <Book className="h-4 w-4 text-gray-500" />;
-    }
-  };
+    // Filter projects within group
+    const filteredProjects = group.projects.filter(project => {
+      // Filter by search query
+      if (state.searchQuery && !project.title.toLowerCase().includes(state.searchQuery.toLowerCase())) {
+        return false;
+      }
+      
+      // Filter by selected statuses
+      if (state.selectedStatuses.length > 0 && !state.selectedStatuses.includes(project.status)) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    return filteredProjects.length > 0;
+  }).map(group => ({
+    ...group,
+    projects: group.projects.filter(project => {
+      if (state.searchQuery && !project.title.toLowerCase().includes(state.searchQuery.toLowerCase())) {
+        return false;
+      }
+      if (state.selectedStatuses.length > 0 && !state.selectedStatuses.includes(project.status)) {
+        return false;
+      }
+      return true;
+    })
+  }));
 
-  const ProjectCard: React.FC<{ project: ProjectData }> = ({ project }) => (
-    <Card 
-      className="cursor-pointer hover:shadow-md transition-all mb-3 border-l-4 border-l-primary/20"
-      onClick={() => handleProjectClick(project)}
-    >
-      <CardContent className="p-4">
-        <div className="space-y-3">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                {getStatusIcon(project.status, project.is_live)}
-                <h3 className="font-medium text-sm truncate">{project.title}</h3>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {format(new Date(project.last_activity), 'MMM dd, HH:mm')}
-              </p>
-            </div>
-            <Badge variant={project.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-              {project.status}
+  const ProjectItem: React.FC<{ project: Project }> = ({ project }) => {
+    const config = PROJECT_TYPE_CONFIG[project.type];
+    const statusConfig = PROJECT_STATUS_CONFIG[project.status];
+    const StatusIcon = iconMap[statusConfig.icon as keyof typeof iconMap];
+    const metadata = ProjectUtils.formatMetadata(project);
+    const isActive = state.activeProjectId === project.id;
+    const isProcessing = ProjectUtils.isProcessing(project);
+
+    return (
+      <div 
+        className={`group flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-accent/50 ${
+          isActive ? 'bg-accent border border-border' : ''
+        }`}
+        onClick={() => handleProjectClick(project)}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-medium text-sm truncate">{project.title}</h4>
+            <Badge variant="outline" className={`text-xs ${statusConfig.color}`}>
+              <StatusIcon className="w-3 h-3 mr-1" />
+              {statusConfig.displayName}
             </Badge>
           </div>
-
-          {/* Progress for active projects */}
-          {project.status === 'processing' && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span>Progress</span>
-                <span>{project.progress}%</span>
+          
+          {metadata.length > 0 && (
+            <p className="text-xs text-muted-foreground truncate">
+              {metadata.join(' • ')}
+            </p>
+          )}
+          
+          {isProcessing && project.metadata.progress !== undefined && (
+            <div className="mt-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex-1 bg-secondary rounded-full h-1">
+                  <div 
+                    className="bg-primary h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${project.metadata.progress}%` }}
+                  />
+                </div>
+                <span>{project.metadata.progress}%</span>
               </div>
-              <Progress value={project.progress} className="h-1" />
-              {project.current_operation && (
-                <p className="text-xs text-muted-foreground">
-                  {project.current_operation}
-                </p>
-              )}
-              {project.estimated_completion && (
-                <p className="text-xs text-blue-600">
-                  Est. {project.estimated_completion}
+              {project.metadata.currentStep && (
+                <p className="text-xs text-muted-foreground mt-1 truncate">
+                  {project.metadata.currentStep}
                 </p>
               )}
             </div>
           )}
-
-          {/* Stats */}
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{project.credits_used} credits</span>
-            {project.current_chapter && project.total_chapters && (
-              <span>Ch {project.current_chapter}/{project.total_chapters}</span>
-            )}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex gap-1">
-            {project.quick_actions.map((action) => (
-              <Button
-                key={action}
-                size="sm"
-                variant="outline"
-                className="h-6 px-2 text-xs"
-                onClick={(e) => handleQuickAction(project, action, e)}
-                title={action.replace('_', ' ')}
-              >
-                {action === 'pause' && <Pause className="h-3 w-3" />}
-                {action === 'view_live' && <Eye className="h-3 w-3" />}
-                {action === 'download_pdf' && <Download className="h-3 w-3" />}
-                {action === 'resume' && <Play className="h-3 w-3" />}
-                {action === 'view' && <BookOpen className="h-3 w-3" />}
-                {action === 'download_partial' && <Download className="h-3 w-3" />}
-              </Button>
-            ))}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-1 ml-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleProjectClick(project);
-              }}
-            >
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </div>
         </div>
-      </CardContent>
-    </Card>
-  );
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleProjectAction('view', project)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            
+            {project.status === 'completed' && project.resultUrl && (
+              <DropdownMenuItem onClick={() => window.open(project.resultUrl, '_blank')}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuItem onClick={() => handleProjectAction('duplicate', project)}>
+              <Copy className="h-4 w-4 mr-2" />
+              Duplicate
+            </DropdownMenuItem>
+            
+            {isProcessing && (
+              <DropdownMenuItem onClick={() => handleProjectAction('cancel', project)}>
+                <StopCircle className="h-4 w-4 mr-2" />
+                Cancel
+              </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem 
+              onClick={() => handleProjectAction('delete', project)}
+              className="text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  };
 
-  if (!isOpen) return null;
+  const ProjectGroup: React.FC<{ group: ProjectGroup }> = ({ group }) => {
+    const config = PROJECT_TYPE_CONFIG[group.type];
+    const Icon = iconMap[config.icon as keyof typeof iconMap];
+    const isExpanded = state.expandedGroups.has(group.type);
+    const processingCount = group.projects.filter(p => ProjectUtils.isProcessing(p)).length;
+
+    return (
+      <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(group.type)}>
+        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-accent/50 rounded-lg group">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-${config.color}-100 text-${config.color}-600`}>
+              <Icon className="w-4 h-4" />
+            </div>
+            <div className="text-left">
+              <h3 className="font-medium text-sm">{config.displayName}</h3>
+              <p className="text-xs text-muted-foreground">
+                {group.projects.length} project{group.projects.length !== 1 ? 's' : ''}
+                {processingCount > 0 && ` • ${processingCount} processing`}
+              </p>
+            </div>
+          </div>
+          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent className="ml-4 space-y-1">
+          {group.projects.map((project) => (
+            <ProjectItem key={project.id} project={project} />
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-background border-r shadow-lg transform transition-transform duration-300 ${className}`}>
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">My Projects</h2>
-            <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={fetchSidebarData} disabled={refreshing}>
-                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onClose}>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* User Stats */}
-          {sidebarData && (
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="text-center p-2 bg-muted/30 rounded">
-                <div className="font-semibold">{sidebarData.user_stats.total_books}</div>
-                <div className="text-muted-foreground">Total Books</div>
-              </div>
-              <div className="text-center p-2 bg-muted/30 rounded">
-                <div className="font-semibold">{sidebarData.user_stats.active_generations}</div>
-                <div className="text-muted-foreground">Active</div>
-              </div>
-            </div>
-          )}
+    <div className={`w-80 border-r bg-background flex flex-col h-full ${className}`}>
+      {/* Header */}
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-lg">Projects</h2>
+          <Button onClick={handleNewProject} size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            New
+          </Button>
         </div>
-
-        {/* Content */}
-        <ScrollArea className="flex-1 p-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="h-6 w-6 animate-spin" />
+        
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search projects..."
+            value={state.searchQuery}
+            onChange={(e) => setState(prev => ({ ...prev, searchQuery: e.target.value }))}
+            className="pl-9"
+          />
+        </div>
+        
+        {/* Filters */}
+        <div className="flex items-center gap-2 mt-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="w-4 h-4 mr-2" />
+                Filter
+                {(state.selectedTypes.length > 0 || state.selectedStatuses.length > 0) && (
+                  <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                    {state.selectedTypes.length + state.selectedStatuses.length}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Project Types</DropdownMenuLabel>
+              {Object.entries(PROJECT_TYPE_CONFIG).map(([type, config]) => (
+                <DropdownMenuItem
+                  key={type}
+                  onClick={() => {
+                    setState(prev => ({
+                      ...prev,
+                      selectedTypes: prev.selectedTypes.includes(type as ProjectType)
+                        ? prev.selectedTypes.filter(t => t !== type)
+                        : [...prev.selectedTypes, type as ProjectType]
+                    }));
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={state.selectedTypes.includes(type as ProjectType)}
+                      readOnly
+                    />
+                    {config.displayName}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              {Object.entries(PROJECT_STATUS_CONFIG).map(([status, config]) => (
+                <DropdownMenuItem
+                  key={status}
+                  onClick={() => {
+                    setState(prev => ({
+                      ...prev,
+                      selectedStatuses: prev.selectedStatuses.includes(status as ProjectStatus)
+                        ? prev.selectedStatuses.filter(s => s !== status)
+                        : [...prev.selectedStatuses, status as ProjectStatus]
+                    }));
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={state.selectedStatuses.includes(status as ProjectStatus)}
+                      readOnly
+                    />
+                    {config.displayName}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={loadProjects}
+            disabled={state.loading}
+          >
+            <RefreshCw className={`w-4 h-4 ${state.loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+      </div>
+      
+      {/* Projects List */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-2">
+          {state.loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin" />
             </div>
-          ) : sidebarData ? (
-            <div className="space-y-6">
-              {/* Active Projects */}
-              {sidebarData.active_projects.length > 0 && (
-                <div>
-                  <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-500" />
-                    Active Generations ({sidebarData.active_projects.length})
-                  </h3>
-                  {sidebarData.active_projects.map((project) => (
-                    <ProjectCard key={project.usage_id} project={project} />
-                  ))}
-                </div>
-              )}
-
-              {/* Recent Projects */}
-              {sidebarData.recent_projects.length > 0 && (
-                <div>
-                  <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
-                    <Book className="h-4 w-4" />
-                    Recent Projects
-                  </h3>
-                  {sidebarData.recent_projects.slice(0, 8).map((project) => (
-                    <ProjectCard key={project.usage_id} project={project} />
-                  ))}
-                </div>
-              )}
-
-              {/* Quick Actions */}
-              <div className="space-y-2">
-                <Separator />
-                <Button 
-                  className="w-full justify-start" 
-                  variant="outline"
-                  onClick={() => {
-                    navigate('/ai-studio/long-form-book');
-                    onClose();
-                  }}
+          ) : filteredGroups.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">No projects found</p>
+              {state.searchQuery && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => setState(prev => ({ ...prev, searchQuery: '' }))}
+                  className="mt-2"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Book Project
+                  Clear search
                 </Button>
-                <Button 
-                  className="w-full justify-start" 
-                  variant="outline"
-                  onClick={() => {
-                    navigate('/book-projects');
-                    onClose();
-                  }}
-                >
-                  <Book className="h-4 w-4 mr-2" />
-                  View All Projects
-                </Button>
-              </div>
+              )}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Book className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-medium mb-2">No Projects Yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Start generating your first AI book
-              </p>
-              <Button 
-                size="sm" 
-                onClick={() => {
-                  navigate('/ai-studio/long-form-book');
-                  onClose();
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Book
-              </Button>
-            </div>
+            <>
+              {filteredGroups.map((group) => (
+                <ProjectGroup key={group.type} group={group} />
+              ))}
+            </>
           )}
-        </ScrollArea>
-
-        {/* Footer Stats */}
-        {sidebarData && (
-          <div className="p-4 border-t bg-muted/20">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <CreditCard className="h-3 w-3" />
-                {sidebarData.user_stats.credits_remaining} credits
-              </div>
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {sidebarData.user_stats.this_month_usage} used
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </ScrollArea>
     </div>
   );
 };
