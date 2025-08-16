@@ -39,7 +39,6 @@ import AuthCallback from "./pages/AuthCallback";
 import BookProjects from "./pages/BookProjects";
 import BookViewer from "./pages/BookViewer";
 import EnhancedBookViewer from "./pages/EnhancedBookViewer";
-import ProjectPage from "./pages/ProjectPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute, { AuthenticatedRoute, UnauthenticatedRoute } from "./components/ProtectedRoute";
 import AuthMessage from "./components/AuthMessage";
