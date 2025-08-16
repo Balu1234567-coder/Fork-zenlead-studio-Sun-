@@ -100,6 +100,10 @@ export class ProjectsApiService {
   
   // Get a specific project by ID
   static async getProject(projectId: string): Promise<ApiResponse<Project>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.getProject(projectId);
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/${projectId}`, {
         headers: {
@@ -126,6 +130,10 @@ export class ProjectsApiService {
     currentStep?: string;
     estimatedTime?: number;
   }>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.getProjectStatus(projectId);
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/${projectId}/status`, {
         headers: {
@@ -147,6 +155,10 @@ export class ProjectsApiService {
   
   // Delete a project
   static async deleteProject(projectId: string): Promise<ApiResponse<void>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.deleteProject(projectId);
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/${projectId}`, {
         method: 'DELETE',
@@ -169,6 +181,10 @@ export class ProjectsApiService {
   
   // Duplicate a project
   static async duplicateProject(projectId: string): Promise<ApiResponse<Project>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.duplicateProject(projectId);
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/${projectId}/duplicate`, {
         method: 'POST',
@@ -194,6 +210,10 @@ export class ProjectsApiService {
     title?: string;
     description?: string;
   }): Promise<ApiResponse<Project>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.updateProject(projectId, updates);
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/${projectId}`, {
         method: 'PATCH',
@@ -222,6 +242,10 @@ export class ProjectsApiService {
     projectsByStatus: Record<ProjectStatus, number>;
     recentActivity: Project[];
   }>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.getProjectStats();
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/stats`, {
         headers: {
@@ -243,6 +267,10 @@ export class ProjectsApiService {
   
   // Cancel a processing project
   static async cancelProject(projectId: string): Promise<ApiResponse<void>> {
+    if (USE_MOCK_DATA) {
+      return MockProjectsService.cancelProject(projectId);
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/ai/projects/${projectId}/cancel`, {
         method: 'POST',
