@@ -229,14 +229,6 @@ const App = () => {
                     </AuthenticatedRoute>
                   }
                 />
-                <Route
-                  path="/book-generation/:urlSlug"
-                  element={
-                    <AuthenticatedRoute>
-                      <EnhancedBookViewer />
-                    </AuthenticatedRoute>
-                  }
-                />
 
                 {/* Catch-all route - redirect internal routes to dashboard, others to 404 */}
                 <Route path="*" element={<NotFound />} />

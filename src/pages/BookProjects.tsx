@@ -68,7 +68,7 @@ const BookProjects: React.FC = () => {
   };
 
   const handleTemplateSelect = (settings: any) => {
-    navigate('/ai-studio/long-form-book', { 
+    navigate('/text/long-form-book', { 
       state: { templateSettings: settings } 
     });
   };
@@ -86,7 +86,7 @@ const BookProjects: React.FC = () => {
       }
 
       // Start generation immediately
-      navigate('/ai-studio/long-form-book', { 
+      navigate('/text/long-form-book', { 
         state: { 
           templateSettings: settings,
           autoStart: true 
@@ -164,7 +164,7 @@ const BookProjects: React.FC = () => {
               </div>
             )}
             <Button 
-              onClick={() => navigate('/ai-studio/long-form-book')}
+              onClick={() => navigate('/text/long-form-book')}
               disabled={!state.creditInfo?.has_sufficient}
             >
               <Plus className="h-4 w-4 mr-2" />

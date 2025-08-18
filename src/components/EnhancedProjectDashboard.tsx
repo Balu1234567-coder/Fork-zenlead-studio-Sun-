@@ -553,6 +553,7 @@ const EnhancedProjectDashboard: React.FC<EnhancedProjectDashboardProps> = ({ cla
                   : 'Create your first AI book project to get started.'}
               </p>
               <Button onClick={() => navigate('/ai-studio/long-form-book')}>
+              <Button onClick={() => navigate('/text/long-form-book')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create New Project
               </Button>

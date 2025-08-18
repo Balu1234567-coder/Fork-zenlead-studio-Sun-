@@ -210,6 +210,7 @@ const QuickDashboard: React.FC = () => {
           <Button 
             className="w-full justify-start" 
             onClick={() => navigate('/ai-studio/long-form-book')}
+            onClick={() => navigate('/text/long-form-book')}
           >
             <Plus className="h-4 w-4 mr-2" />
             Generate New Book
@@ -217,10 +218,10 @@ const QuickDashboard: React.FC = () => {
           <Button 
             variant="outline" 
             className="w-full justify-start"
-            onClick={() => navigate('/book-projects')}
+            onClick={() => navigate('/text')}
           >
             <Book className="h-4 w-4 mr-2" />
-            View All Projects
+            Text Studio
           </Button>
           {dashboardData?.quick_stats && (
             <div className="pt-4 border-t">

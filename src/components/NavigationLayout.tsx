@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Folder, BookOpen } from 'lucide-react';
 import ProjectSidebar from '@/components/ProjectSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 interface NavigationLayoutProps {
   children: React.ReactNode;
@@ -15,9 +16,14 @@ const NavigationLayout: React.FC<NavigationLayoutProps> = ({
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
 
   // Only show project sidebar for authenticated users
-  const shouldShowSidebar = isAuthenticated && showProjectToggle;
+  const shouldShowSidebar = isAuthenticated && showProjectToggle && 
+    (location.pathname.startsWith('/text') || 
+     location.pathname.startsWith('/audio') || 
+     location.pathname.startsWith('/video') ||
+     location.pathname.startsWith('/code'));
 
   return (
     <div className="relative">

@@ -18,6 +18,7 @@ import ResumeAnalyser from "@/components/text-processing/resume-analyser";
 
 // Import content generation components
 import BookGeneration from "@/components/text-processing/BookGeneration";
+import BookProjectViewer from "@/components/text-processing/BookProjectViewer";
 import CourseGeneration from "@/components/text-processing/CourseGeneration";
 import ResearchGeneration from "@/components/text-processing/ResearchGeneration";
 import LetterGeneration from "@/components/text-processing/LetterGeneration";

@@ -292,18 +292,18 @@ export class EnhancedBookApiService {
   }
 
   // Get project by URL slug
-  static async getProjectBySlug(urlSlug: string): Promise<any> {
-    const response = await fetch(`/api/ai/long-form-book/project/${urlSlug}`, {
+  static async getProjectById(projectId: string): Promise<any> {
+    const response = await fetch(`/api/ai/long-form-book/project/${projectId}`, {
       headers: this.getAuthHeaders()
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get project by slug');
+      throw new Error('Failed to get project by ID');
     }
 
     const result = await response.json();
     if (!result.success) {
-      throw new Error(result.message || 'Failed to get project by slug');
+      throw new Error(result.message || 'Failed to get project by ID');
     }
 
     return result.data;

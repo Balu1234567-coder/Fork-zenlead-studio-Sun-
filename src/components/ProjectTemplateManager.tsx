@@ -239,7 +239,7 @@ const ProjectTemplateManager: React.FC<ProjectTemplateManagerProps> = ({
       if (!creditCheck.data.has_sufficient_credits) {
         toast({
           title: "Insufficient Credits",
-          description: `You need ${template.credits_required} credits to start this project.`,
+        navigate('/text/long-form-book', { 
           variant: "destructive"
         });
         return;

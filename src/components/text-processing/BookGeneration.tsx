@@ -9,10 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import DynamicFormGenerator from "@/components/DynamicFormGenerator";
 import EnhancedStreamingBookGenerator from "@/components/EnhancedStreamingBookGenerator";
 import { BookGenerationUtils, BookGenerationStateManager } from "@/lib/bookGenerationState";
+import { useNavigate } from "react-router-dom";
 
 const BookGeneration = () => {
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationRequestData, setGenerationRequestData] = useState<any>(null);
   const [generatedBooks, setGeneratedBooks] = useState<Array<{ usageId: string; bookData: any; requestData: any }>>([]);
