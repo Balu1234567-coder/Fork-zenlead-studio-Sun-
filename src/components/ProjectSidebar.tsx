@@ -183,14 +183,14 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
     // Use the new URL structure for all projects
     if (project.project_type === 'long-form-book') {
       if (project.status === 'processing') {
-        navigate(`/text/long-form-book/${project.usage_id}?view=live`);
+        navigate(`/texts/long-form-book/${project.usage_id}?view=live`);
       } else {
-        navigate(`/text/long-form-book/${project.usage_id}`);
+        navigate(`/texts/long-form-book/${project.usage_id}`);
       }
     } else {
       // For other project types, navigate to their specific routes
       // You can extend this for other AI models in the future
-      navigate(`/text/${project.project_type}/${project.usage_id}`);
+      navigate(`/texts/${project.project_type}/${project.usage_id}`);
     }
   };
 
@@ -224,9 +224,9 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
           
         case 'view_live':
           if (project.project_type === 'long-form-book') {
-            navigate(`/text/long-form-book/${project.usage_id}?view=live`);
+            navigate(`/texts/long-form-book/${project.usage_id}?view=live`);
           } else {
-            navigate(`/text/${project.project_type}/${project.usage_id}?view=live`);
+            navigate(`/texts/${project.project_type}/${project.usage_id}?view=live`);
           }
           break;
           
@@ -257,9 +257,9 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
         case 'resume':
           // Navigate to project page with resume action
           if (project.project_type === 'long-form-book') {
-            navigate(`/text/long-form-book/${project.usage_id}?action=resume`);
+            navigate(`/texts/long-form-book/${project.usage_id}?action=resume`);
           } else {
-            navigate(`/text/${project.project_type}/${project.usage_id}?action=resume`);
+            navigate(`/texts/${project.project_type}/${project.usage_id}?action=resume`);
           }
 
           toast({

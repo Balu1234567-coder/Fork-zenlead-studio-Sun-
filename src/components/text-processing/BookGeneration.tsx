@@ -116,7 +116,7 @@ const BookGeneration = () => {
 
     // Navigate to the new project URL structure
     setTimeout(() => {
-      navigate(`/text/long-form-book/${usageId}`);
+      navigate(`/texts/long-form-book/${usageId}`);
     }, 1500);
   };
 
