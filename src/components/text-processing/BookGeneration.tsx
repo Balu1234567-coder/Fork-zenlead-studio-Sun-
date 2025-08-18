@@ -104,14 +104,20 @@ const BookGeneration = () => {
       { usageId, bookData, requestData: generationRequestData },
       ...prev
     ]);
-    
+
     setIsGenerating(false);
     BookGenerationStateManager.clearState();
-    
+
     toast({
       title: "Success",
-      description: "Book generated successfully! You can download the PDF or view it anytime.",
+      description: "Book generated successfully! Redirecting to your project...",
+      duration: 3000,
     });
+
+    // Navigate to the new project URL structure
+    setTimeout(() => {
+      navigate(`/text/long-form-book/${usageId}`);
+    }, 1500);
   };
 
   const handleGenerationError = (error: string) => {
