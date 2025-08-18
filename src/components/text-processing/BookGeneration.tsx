@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Book, Download, RefreshCw, ArrowLeft, AlertTriangle, Sparkles } from "lucide-react";
+import { Book, Download, RefreshCw, ArrowLeft, AlertTriangle, Sparkles, CheckCircle } from "lucide-react";
 import { apiService } from "@/lib/apiService";
 import { useToast } from "@/hooks/use-toast";
 import DynamicFormGenerator from "@/components/DynamicFormGenerator";
