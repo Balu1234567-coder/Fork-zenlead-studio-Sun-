@@ -253,6 +253,32 @@ const BookGeneration = () => {
         </Card>
       )}
 
+      {/* Success Banner for Latest Book */}
+      {generatedBooks.length > 0 && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-green-800 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Book Generation Complete! 🎉
+                </h3>
+                <p className="text-sm text-green-600 mt-1">
+                  "{generatedBooks[0].bookData?.book_metadata?.title || 'Your Latest Book'}" is ready to view
+                </p>
+              </div>
+              <Button
+                onClick={() => navigate(`/texts/long-form-book/${generatedBooks[0].usageId}`)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Book className="h-4 w-4 mr-2" />
+                Go to Your Book Project
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Dynamic Form */}
       <DynamicFormGenerator
         modelSlug="long-form-book"
