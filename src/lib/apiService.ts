@@ -223,6 +223,81 @@ class APIService {
     return this.makeRequest<any>('/api/ai/projects/processing');
   }
 
+  // Book project management endpoints
+  async getBookProjectView(usageId: string): Promise<APIResponse<any>> {
+    return this.makeRequest<any>(`/api/ai/long-form-book/project/${usageId}`);
+  }
+
+  async getStoredBook(usageId: string): Promise<APIResponse<any>> {
+    return this.makeRequest<any>(`/api/ai/long-form-book/${usageId}/stored`);
+  }
+
+  async getBookPDF(usageId: string): Promise<APIResponse<any>> {
+    return this.makeRequest<any>(`/api/ai/long-form-book/${usageId}/pdf`);
+  }
+
+  async getBookGenerationStatus(usageId: string): Promise<APIResponse<any>> {
+    return this.makeRequest<any>(`/api/ai/long-form-book/${usageId}/status`);
+  }
+
+  async cancelBookGeneration(usageId: string): Promise<APIResponse<any>> {
+    return this.makeRequest<any>(`/api/ai/long-form-book/${usageId}/cancel`, {
+      method: 'POST'
+    });
+  }
+
+  async resumeBookGeneration(usageId: string): Promise<APIResponse<any>> {
+    return this.makeRequest<any>(`/api/ai/long-form-book/${usageId}/resume`, {
+      method: 'POST'
+    });
+  }
+
+  async getBookHistory(limit: number = 10, offset: number = 0): Promise<APIResponse<any>> {
+    const searchParams = new URLSearchParams();
+    searchParams.append('limit', limit.toString());
+    searchParams.append('offset', offset.toString());
+
+    return this.makeRequest<any>(`/api/ai/long-form-book/history?${searchParams.toString()}`);
+  }
+
+  async duplicateBookSettings(usageId: string): Promise<APIResponse<any>> {
+    return this.makeRequest<any>(`/api/ai/long-form-book/${usageId}/duplicate`);
+  }
+
+  async checkBookGenerationCredits(): Promise<APIResponse<any>> {
+    return this.makeRequest<any>('/api/ai/long-form-book/check-credits');
+  }
+
+  // Project management endpoints for all AI models
+  async pauseProject(projectType: string, usageId: string, options: any = {}): Promise<APIResponse<any>> {
+    const endpoint = projectType === 'long-form-book'
+      ? `/api/ai/long-form-book/${usageId}/pause`
+      : `/api/ai/${projectType}/${usageId}/pause`;
+
+    return this.makeRequest<any>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(options)
+    });
+  }
+
+  async cancelProject(projectType: string, usageId: string): Promise<APIResponse<any>> {
+    const endpoint = projectType === 'long-form-book'
+      ? `/api/ai/long-form-book/${usageId}/cancel`
+      : `/api/ai/${projectType}/${usageId}/cancel`;
+
+    return this.makeRequest<any>(endpoint, {
+      method: 'POST'
+    });
+  }
+
+  async downloadProjectResult(projectType: string, usageId: string): Promise<APIResponse<any>> {
+    const endpoint = projectType === 'long-form-book'
+      ? `/api/ai/long-form-book/${usageId}/pdf`
+      : `/api/ai/${projectType}/${usageId}/download`;
+
+    return this.makeRequest<any>(endpoint);
+  }
+
   // Long-form book generation with Server-Sent Events streaming
   async generateLongFormBookStream(requestData: any): Promise<EventSource> {
     const url = `${API_BASE_URL}/api/ai/long-form-book/generate-stream`;
