@@ -100,6 +100,8 @@ const BookGeneration = () => {
   };
 
   const handleGenerationComplete = (usageId: string, bookData: any) => {
+    console.log('🎯 BookGeneration: Generation completed!', { usageId, bookData });
+
     setGeneratedBooks(prev => [
       { usageId, bookData, requestData: generationRequestData },
       ...prev
@@ -108,16 +110,25 @@ const BookGeneration = () => {
     setIsGenerating(false);
     BookGenerationStateManager.clearState();
 
-    toast({
-      title: "Success",
-      description: "Book generated successfully! Redirecting to your project...",
-      duration: 3000,
-    });
+    if (usageId) {
+      toast({
+        title: "Success",
+        description: "Book generated successfully! Redirecting to your project...",
+        duration: 3000,
+      });
 
-    // Navigate to the new project URL structure
-    setTimeout(() => {
-      navigate(`/texts/long-form-book/${usageId}`);
-    }, 1500);
+      // Navigate to the new project URL structure
+      console.log('🚀 Navigating to:', `/texts/long-form-book/${usageId}`);
+      setTimeout(() => {
+        navigate(`/texts/long-form-book/${usageId}`);
+      }, 1500);
+    } else {
+      toast({
+        title: "Success",
+        description: "Book generated successfully! Check the generated books section below.",
+        duration: 5000,
+      });
+    }
   };
 
   const handleGenerationError = (error: string) => {
@@ -283,6 +294,14 @@ const BookGeneration = () => {
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
+                      onClick={() => navigate(`/texts/long-form-book/${book.usageId}`)}
+                    >
+                      <Book className="h-4 w-4 mr-2" />
+                      View Project
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => downloadPDF(book.usageId, book.bookData?.book_metadata?.title || 'book')}
                     >
                       <Download className="h-4 w-4 mr-2" />
