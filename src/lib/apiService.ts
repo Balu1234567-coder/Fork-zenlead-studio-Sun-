@@ -198,6 +198,10 @@ class APIService {
 
   // Get models by category
   async getModelsByCategory(category: string): Promise<APIResponse<PaginatedResponse<AIModel>>> {
+    return this.getAllModels({ category, status: 'active' });
+  }
+
+  // Get all user projects
   async getAllUserProjects(params: {
     project_type?: string;
     status?: string;
@@ -205,15 +209,14 @@ class APIService {
     offset?: number;
   } = {}): Promise<APIResponse<any>> {
     const searchParams = new URLSearchParams();
-    
+
     if (params.project_type) searchParams.append('project_type', params.project_type);
     if (params.status) searchParams.append('status', params.status);
     if (params.limit) searchParams.append('limit', params.limit.toString());
     if (params.offset) searchParams.append('offset', params.offset.toString());
-    return this.getAllModels({ category, status: 'active' });
+
     const endpoint = `/api/ai/projects?${searchParams.toString()}`;
     return this.makeRequest<any>(endpoint);
-  }
   }
   // Get processing projects for live updates
   async getProcessingProjects(): Promise<APIResponse<any>> {
