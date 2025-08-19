@@ -104,8 +104,8 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
       if (!silent) setLoading(true);
       setRefreshing(true);
 
-      // Call the new projects endpoint for all AI projects
-      const response = await fetch('/api/ai/projects', {
+      // Call the projects endpoint for all AI projects
+      const response = await fetch('/api/ai/ai/projects', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'

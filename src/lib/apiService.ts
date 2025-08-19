@@ -215,12 +215,12 @@ class APIService {
     if (params.limit) searchParams.append('limit', params.limit.toString());
     if (params.offset) searchParams.append('offset', params.offset.toString());
 
-    const endpoint = `/api/ai/projects?${searchParams.toString()}`;
+    const endpoint = `/api/ai/ai/projects?${searchParams.toString()}`;
     return this.makeRequest<any>(endpoint);
   }
   // Get processing projects for live updates
   async getProcessingProjects(): Promise<APIResponse<any>> {
-    return this.makeRequest<any>('/api/ai/projects/processing');
+    return this.makeRequest<any>('/api/ai/ai/projects/processing');
   }
 
   // Book project management endpoints
