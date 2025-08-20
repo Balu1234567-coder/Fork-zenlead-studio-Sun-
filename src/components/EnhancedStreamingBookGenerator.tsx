@@ -300,6 +300,22 @@ const EnhancedStreamingBookGenerator: React.FC<EnhancedStreamingBookGeneratorPro
         setCurrentMessage(event.message || 'Credits deducted successfully...');
         setUsageId(event.usage_id || '');
         setProgress(5);
+
+        // Navigate to project page after credits deducted
+        if (event.usage_id) {
+          const projectUrl = `/texts/long-form-book/${event.usage_id}?view=live`;
+          console.log('🚀 Navigating to project after credits deducted:', projectUrl);
+
+          toast({
+            title: "Redirecting",
+            description: "Taking you to your book project...",
+            duration: 2000,
+          });
+
+          setTimeout(() => {
+            window.location.href = projectUrl;
+          }, 2000);
+        }
         break;
 
       case 'progress':
