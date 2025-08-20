@@ -90,13 +90,39 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Auto-refresh interval
+  // Auto-refresh interval - more frequent for processing projects
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchSidebarData();
-    }, 30000); // Refresh every 30 seconds
+      fetchSidebarData(true); // Silent refresh
+    }, 10000); // Refresh every 10 seconds
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Separate polling for processing projects
+  useEffect(() => {
+    const processingInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/ai/ai/projects/processing', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data.processing_projects.length > 0) {
+            // Trigger a full refresh if there are processing projects
+            fetchSidebarData(true);
+          }
+        }
+      } catch (error) {
+        console.warn('Processing projects check failed:', error);
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(processingInterval);
   }, []);
 
   const fetchSidebarData = useCallback(async (silent: boolean = false) => {
@@ -180,17 +206,34 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
   }, [isOpen]);
 
   const handleProjectClick = (project: ProjectData) => {
-    // Use the new URL structure for all projects
-    if (project.project_type === 'long-form-book') {
-      if (project.status === 'processing') {
-        navigate(`/texts/long-form-book/${project.usage_id}?view=live`);
+    // Use backend-provided project_url if available, otherwise construct URL
+    if (project.project_url && project.project_url.startsWith('/ai/')) {
+      // Convert backend URL format to frontend format
+      const urlParts = project.project_url.split('/');
+      const modelType = urlParts[2]; // long-form-book
+      const usageId = urlParts[4]; // usage_id
+
+      if (modelType === 'long-form-book') {
+        if (project.status === 'processing') {
+          navigate(`/texts/long-form-book/${usageId}?view=live`);
+        } else {
+          navigate(`/texts/long-form-book/${usageId}`);
+        }
       } else {
-        navigate(`/texts/long-form-book/${project.usage_id}`);
+        // For other project types, navigate to their specific routes
+        navigate(`/texts/${modelType}/${usageId}`);
       }
     } else {
-      // For other project types, navigate to their specific routes
-      // You can extend this for other AI models in the future
-      navigate(`/texts/${project.project_type}/${project.usage_id}`);
+      // Fallback to direct construction
+      if (project.project_type === 'long-form-book') {
+        if (project.status === 'processing') {
+          navigate(`/texts/long-form-book/${project.usage_id}?view=live`);
+        } else {
+          navigate(`/texts/long-form-book/${project.usage_id}`);
+        }
+      } else {
+        navigate(`/texts/${project.project_type}/${project.usage_id}`);
+      }
     }
   };
 
