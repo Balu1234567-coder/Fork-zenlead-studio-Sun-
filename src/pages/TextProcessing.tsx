@@ -245,6 +245,12 @@ const TextProcessing = () => {
           element={<BookGeneration />}
         />
 
+        {/* Individual book project route */}
+        <Route
+          path="/long-form-book/:projectId"
+          element={<BookProjectViewer />}
+        />
+
         <Route
           path="/research-paper"
           element={<ResearchGeneration />}

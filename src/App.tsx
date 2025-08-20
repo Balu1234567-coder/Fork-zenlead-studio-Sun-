@@ -171,6 +171,15 @@ const App = () => {
                     </AuthenticatedRoute>
                   }
                 />
+                {/* Additional route for /texts/* for project URLs */}
+                <Route
+                  path="/texts/*"
+                  element={
+                    <AuthenticatedRoute>
+                      <TextProcessing />
+                    </AuthenticatedRoute>
+                  }
+                />
                 <Route
                   path="/text-processing"
                   element={

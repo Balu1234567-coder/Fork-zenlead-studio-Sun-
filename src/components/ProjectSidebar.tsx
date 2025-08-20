@@ -90,13 +90,39 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Auto-refresh interval
+  // Auto-refresh interval - more frequent for processing projects
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchSidebarData();
-    }, 30000); // Refresh every 30 seconds
+      fetchSidebarData(true); // Silent refresh
+    }, 10000); // Refresh every 10 seconds
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Separate polling for processing projects
+  useEffect(() => {
+    const processingInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/ai/ai/projects/processing', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data.processing_projects.length > 0) {
+            // Trigger a full refresh if there are processing projects
+            fetchSidebarData(true);
+          }
+        }
+      } catch (error) {
+        console.warn('Processing projects check failed:', error);
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(processingInterval);
   }, []);
 
   const fetchSidebarData = useCallback(async (silent: boolean = false) => {
@@ -104,8 +130,8 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
       if (!silent) setLoading(true);
       setRefreshing(true);
 
-      // Call the new projects endpoint for all AI projects
-      const response = await fetch('/api/ai/projects', {
+      // Call the projects endpoint for all AI projects
+      const response = await fetch('/api/ai/ai/projects', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json'
@@ -180,20 +206,33 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
   }, [isOpen]);
 
   const handleProjectClick = (project: ProjectData) => {
-    // Use the project_url from backend for proper routing
-    if (project.project_url) {
-      navigate(project.project_url);
-    } else {
-      // Fallback to project type specific routing
-      if (project.project_type === 'long-form-book') {
+    // Use backend-provided project_url if available, otherwise construct URL
+    if (project.project_url && project.project_url.startsWith('/ai/')) {
+      // Convert backend URL format to frontend format
+      const urlParts = project.project_url.split('/');
+      const modelType = urlParts[2]; // long-form-book
+      const usageId = urlParts[4]; // usage_id
+
+      if (modelType === 'long-form-book') {
         if (project.status === 'processing') {
-          navigate(`/text/long-form-book/${project.usage_id}?view=live`);
+          navigate(`/texts/long-form-book/${usageId}?view=live`);
         } else {
-          navigate(`/text/long-form-book/${project.usage_id}`);
+          navigate(`/texts/long-form-book/${usageId}`);
         }
       } else {
         // For other project types, navigate to their specific routes
-        navigate(`/text/${project.project_type}/${project.usage_id}`);
+        navigate(`/texts/${modelType}/${usageId}`);
+      }
+    } else {
+      // Fallback to direct construction
+      if (project.project_type === 'long-form-book') {
+        if (project.status === 'processing') {
+          navigate(`/texts/long-form-book/${project.usage_id}?view=live`);
+        } else {
+          navigate(`/texts/long-form-book/${project.usage_id}`);
+        }
+      } else {
+        navigate(`/texts/${project.project_type}/${project.usage_id}`);
       }
     }
   };
@@ -204,59 +243,50 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
     try {
       switch (action) {
         case 'pause':
-          const pauseEndpoint = project.project_type === 'long-form-book' 
-            ? `/api/ai/long-form-book/${project.usage_id}/pause`
-            : `/api/ai/${project.project_type}/${project.usage_id}/pause`;
-            
-          await fetch(pauseEndpoint, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
+          try {
+            const result = await apiService.pauseProject(project.project_type, project.usage_id, {
+              reason: 'user_requested',
+              save_checkpoint: true
+            });
+
+            if (result.success) {
+              toast({
+                title: "Paused",
+                description: `${project.title} has been paused`,
+              });
+              fetchSidebarData();
             }
-          });
-          
-          toast({
-            title: "Paused",
-            description: `${project.title} has been paused`,
-          });
-          fetchSidebarData();
+          } catch (error) {
+            toast({
+              title: "Error",
+              description: "Failed to pause project",
+              variant: "destructive"
+            });
+          }
           break;
           
         case 'view_live':
           if (project.project_type === 'long-form-book') {
-            navigate(`/text/long-form-book/${project.usage_id}?view=live`);
+            navigate(`/texts/long-form-book/${project.usage_id}?view=live`);
           } else {
-            navigate(`/text/${project.project_type}/${project.usage_id}?view=live`);
+            navigate(`/texts/${project.project_type}/${project.usage_id}?view=live`);
           }
           break;
           
         case 'download_pdf':
           try {
-            const downloadEndpoint = project.project_type === 'long-form-book'
-              ? `/api/ai/long-form-book/${project.usage_id}/pdf`
-              : `/api/ai/${project.project_type}/${project.usage_id}/download`;
-              
-            const response = await fetch(downloadEndpoint, {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-                'Content-Type': 'application/json'
-              }
-            });
+            const result = await apiService.downloadProjectResult(project.project_type, project.usage_id);
 
-            if (response.ok) {
-              const result = await response.json();
-              if (result.success && result.data.pdf_base64) {
-                const link = document.createElement('a');
-                link.href = `data:application/pdf;base64,${result.data.pdf_base64}`;
-                link.download = result.data.filename || `${project.title}.pdf`;
-                link.click();
+            if (result.success && result.data.pdf_base64) {
+              const link = document.createElement('a');
+              link.href = `data:application/pdf;base64,${result.data.pdf_base64}`;
+              link.download = result.data.filename || `${project.title}.pdf`;
+              link.click();
 
-                toast({
-                  title: "Downloaded",
-                  description: "PDF downloaded successfully!",
-                });
-              }
+              toast({
+                title: "Downloaded",
+                description: "PDF downloaded successfully!",
+              });
             }
           } catch (error) {
             toast({
@@ -268,27 +298,17 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ isOpen, onClose, classN
           break;
 
         case 'resume':
-          const resumeEndpoint = project.project_type === 'long-form-book'
-            ? `/api/ai/long-form-book/${project.usage_id}/resume`
-            : `/api/ai/${project.project_type}/${project.usage_id}/resume`;
-            
-          await fetch(resumeEndpoint, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
+          // Navigate to project page with resume action
+          if (project.project_type === 'long-form-book') {
+            navigate(`/texts/long-form-book/${project.usage_id}?action=resume`);
+          } else {
+            navigate(`/texts/${project.project_type}/${project.usage_id}?action=resume`);
+          }
 
           toast({
-            title: "Resumed",
-            description: `${project.title} generation resumed`,
+            title: "Resuming",
+            description: `Opening ${project.title} for resume`,
           });
-          if (project.project_type === 'long-form-book') {
-            navigate(`/text/long-form-book/${project.usage_id}?view=live`);
-          } else {
-            navigate(`/text/${project.project_type}/${project.usage_id}?view=live`);
-          }
           break;
 
         case 'view':

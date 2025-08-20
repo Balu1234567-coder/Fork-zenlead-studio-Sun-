@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Book, 
   Play, 
@@ -19,12 +20,17 @@ import {
   Loader2,
   Eye,
   BookOpen,
-  X
+  X,
+  Copy,
+  FileText,
+  CreditCard,
+  Calendar
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EnhancedStreamingBookGenerator from "@/components/EnhancedStreamingBookGenerator";
 import { BookContentRenderer } from "@/components/BookContentRenderer";
 import { apiService } from "@/lib/apiService";
+import { format } from 'date-fns';
 
 interface ProjectState {
   usage_id: string;
@@ -32,12 +38,16 @@ interface ProjectState {
   project_name: string;
   status: string;
   created_at: string;
+  started_at?: string;
   completed_at?: string;
   credits_used: number;
-  has_results: boolean;
-  title: string;
-  genre: string;
-  book_data?: any;
+  error_message?: string;
+  book_data: {
+    title: string;
+    concept: string;
+    genre: string;
+    settings: any;
+  };
   navigation: {
     can_duplicate: boolean;
     can_cancel: boolean;
@@ -60,7 +70,7 @@ interface BookData {
 
 const BookProjectViewer: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -70,6 +80,7 @@ const BookProjectViewer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'viewer' | 'generator'>('viewer');
   const [chapters, setChapters] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('overview');
 
   const action = searchParams.get('action');
   const viewParam = searchParams.get('view');
@@ -99,45 +110,26 @@ const BookProjectViewer: React.FC = () => {
       setError(null);
 
       // Get project view data from new backend endpoint
-      const response = await fetch(`/api/ai/long-form-book/project/${projectId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load project: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const projectResult = await apiService.getBookProjectView(projectId);
       
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to load project');
+      if (!projectResult.success) {
+        throw new Error(projectResult.message || 'Failed to load project');
       }
 
-      const projectData = result.data;
+      const projectData = projectResult.data;
       setProjectState(projectData);
 
       // If completed, load the full book data
       if (projectData.status === 'completed') {
         try {
-          const bookResponse = await fetch(`/api/ai/long-form-book/${projectId}/stored`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
+          const bookResult = await apiService.getStoredBook(projectId);
+          
+          if (bookResult.success) {
+            setBookData(bookResult.data);
 
-          if (bookResponse.ok) {
-            const bookResult = await bookResponse.json();
-            if (bookResult.success) {
-              setBookData(bookResult.data);
-
-              // Extract chapters for display
-              if (bookResult.data.full_book_content?.chapters) {
-                setChapters(bookResult.data.full_book_content.chapters);
-              }
+            // Extract chapters for display
+            if (bookResult.data.full_book_content?.chapters) {
+              setChapters(bookResult.data.full_book_content.chapters);
             }
           }
         } catch (bookError) {
@@ -163,20 +155,13 @@ const BookProjectViewer: React.FC = () => {
     try {
       switch (actionType) {
         case 'pause':
-          const pauseResponse = await fetch(`/api/ai/long-form-book/${projectState.usage_id}/pause`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              reason: 'user_requested',
-              save_checkpoint: true,
-              preserve_url: true
-            })
+          const pauseResult = await apiService.pauseProject('long-form-book', projectState.usage_id, {
+            reason: 'user_requested',
+            save_checkpoint: true,
+            preserve_url: true
           });
 
-          if (pauseResponse.ok) {
+          if (pauseResult.success) {
             toast({
               title: "Paused",
               description: "Generation paused successfully. Progress saved.",
@@ -186,31 +171,25 @@ const BookProjectViewer: React.FC = () => {
           break;
 
         case 'resume':
+          // Update URL to show live view
+          setSearchParams({ view: 'live' });
           setView('generator');
           break;
           
         case 'download':
           try {
-            const response = await fetch(`/api/ai/long-form-book/${projectState.usage_id}/pdf`, {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-                'Content-Type': 'application/json'
-              }
-            });
+            const result = await apiService.getBookPDF(projectState.usage_id);
 
-            if (response.ok) {
-              const result = await response.json();
-              if (result.success && result.data.pdf_base64) {
-                const link = document.createElement('a');
-                link.href = `data:application/pdf;base64,${result.data.pdf_base64}`;
-                link.download = result.data.filename || 'book.pdf';
-                link.click();
+            if (result.success && result.data.pdf_base64) {
+              const link = document.createElement('a');
+              link.href = `data:application/pdf;base64,${result.data.pdf_base64}`;
+              link.download = result.data.filename || 'book.pdf';
+              link.click();
 
-                toast({
-                  title: "Downloaded",
-                  description: "PDF downloaded successfully!",
-                });
-              }
+              toast({
+                title: "Downloaded",
+                description: "PDF downloaded successfully!",
+              });
             }
           } catch (downloadError) {
             console.error('Download failed:', downloadError);
@@ -223,23 +202,14 @@ const BookProjectViewer: React.FC = () => {
           break;
           
         case 'cancel':
-          const cancelResponse = await fetch(`/api/ai/long-form-book/${projectState.usage_id}/cancel`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
+          const cancelResult = await apiService.cancelBookGeneration(projectState.usage_id);
 
-          if (cancelResponse.ok) {
-            const cancelResult = await cancelResponse.json();
-            if (cancelResult.success) {
-              toast({
-                title: "Cancelled",
-                description: `Generation cancelled. ${cancelResult.data.credits_refunded} credits refunded.`,
-              });
-              loadProjectState();
-            }
+          if (cancelResult.success) {
+            toast({
+              title: "Cancelled",
+              description: `Generation cancelled. ${cancelResult.data.credits_refunded || 0} credits refunded.`,
+            });
+            loadProjectState();
           }
           break;
           
@@ -249,6 +219,24 @@ const BookProjectViewer: React.FC = () => {
             title: "Link Copied",
             description: "Project link copied to clipboard",
           });
+          break;
+
+        case 'duplicate':
+          try {
+            const duplicateResult = await apiService.duplicateBookSettings(projectState.usage_id);
+            
+            if (duplicateResult.success) {
+              navigate('/text/long-form-book', { 
+                state: { templateSettings: duplicateResult.data.settings } 
+              });
+            }
+          } catch (duplicateError) {
+            toast({
+              title: "Error",
+              description: "Failed to duplicate book settings",
+              variant: "destructive"
+            });
+          }
           break;
           
         default:
@@ -266,15 +254,28 @@ const BookProjectViewer: React.FC = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'processing':
-        return <Clock className="h-5 w-5 text-blue-500" />;
+        return <Clock className="h-5 w-5 text-blue-500 animate-pulse" />;
       case 'completed':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'failed':
         return <AlertTriangle className="h-5 w-5 text-red-500" />;
       case 'pending':
         return <Pause className="h-5 w-5 text-yellow-500" />;
+      case 'cancelled':
+        return <X className="h-5 w-5 text-gray-500" />;
       default:
         return <Book className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -298,13 +299,24 @@ const BookProjectViewer: React.FC = () => {
   }
 
   // Show generator view for active generation or resume
-  if (view === 'generator' || (projectState.status === 'processing' && !bookData)) {
+  if (view === 'generator' && (projectState.status === 'processing' || viewParam === 'live')) {
     return (
       <div className="h-full">
+        <div className="mb-4">
+          <Button variant="outline" onClick={() => {
+            setView('viewer');
+            setSearchParams({});
+          }}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Project View
+          </Button>
+        </div>
         <EnhancedStreamingBookGenerator
           requestData={projectState.book_data?.settings || {}}
+          usageId={projectState.usage_id}
           onComplete={(usageId, data) => {
             setView('viewer');
+            setSearchParams({});
             loadProjectState();
             toast({
               title: "Success",
@@ -318,7 +330,10 @@ const BookProjectViewer: React.FC = () => {
               variant: "destructive"
             });
           }}
-          onCancel={() => setView('viewer')}
+          onCancel={() => {
+            setView('viewer');
+            setSearchParams({});
+          }}
         />
       </div>
     );
@@ -336,31 +351,41 @@ const BookProjectViewer: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               {getStatusIcon(projectState.status)}
-              {projectState.title || 'Book Project'}
+              {projectState.book_data?.title || 'Book Project'}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Created {new Date(projectState.created_at).toLocaleDateString()} • 
+              Created {format(new Date(projectState.created_at), 'PPP')} • 
               {projectState.credits_used} credits used
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <Badge variant={projectState.status === 'completed' ? 'default' : 'secondary'}>
+          <Badge className={`${getStatusColor(projectState.status)} border-0`}>
             {projectState.status}
           </Badge>
           
           {projectState.status === 'processing' && (
-            <Button size="sm" onClick={() => setView('generator')}>
+            <Button size="sm" onClick={() => {
+              setSearchParams({ view: 'live' });
+              setView('generator');
+            }}>
               <Eye className="h-4 w-4 mr-2" />
               Watch Live
             </Button>
           )}
           
-          {projectState.navigation.can_cancel && (
-            <Button size="sm" variant="outline" onClick={() => handleAction('cancel')}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
+          {projectState.navigation.can_cancel && projectState.status === 'processing' && (
+            <Button size="sm" variant="outline" onClick={() => handleAction('pause')}>
+              <Pause className="h-4 w-4 mr-2" />
+              Pause
+            </Button>
+          )}
+          
+          {projectState.status === 'pending' && (
+            <Button size="sm" variant="outline" onClick={() => handleAction('resume')}>
+              <Play className="h-4 w-4 mr-2" />
+              Resume
             </Button>
           )}
           
@@ -368,6 +393,20 @@ const BookProjectViewer: React.FC = () => {
             <Button size="sm" variant="outline" onClick={() => handleAction('download')}>
               <Download className="h-4 w-4 mr-2" />
               Download PDF
+            </Button>
+          )}
+
+          {projectState.navigation.can_duplicate && (
+            <Button size="sm" variant="outline" onClick={() => handleAction('duplicate')}>
+              <Copy className="h-4 w-4 mr-2" />
+              Duplicate
+            </Button>
+          )}
+          
+          {projectState.navigation.can_cancel && (
+            <Button size="sm" variant="outline" onClick={() => handleAction('cancel')}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
             </Button>
           )}
           
@@ -382,134 +421,265 @@ const BookProjectViewer: React.FC = () => {
         </div>
       </div>
 
-      {/* Project Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Project Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <strong>Genre:</strong> {projectState.genre || 'N/A'}
-            </div>
-            <div>
-              <strong>Status:</strong> {projectState.status}
-            </div>
-            <div>
-              <strong>Credits Used:</strong> {projectState.credits_used}
-            </div>
-            <div>
-              <strong>Has Results:</strong> {projectState.has_results ? 'Yes' : 'No'}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          {bookData && <TabsTrigger value="content">Book Content</TabsTrigger>}
+          <TabsTrigger value="details">Project Details</TabsTrigger>
+        </TabsList>
 
-      {/* Progress Card for Active Generation */}
-      {projectState.status === 'processing' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Generation in Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => setView('generator')}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Watch Live Generation
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => handleAction('pause')}>
-                  <Pause className="h-4 w-4 mr-2" />
-                  Pause Generation
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Book Content */}
-      {bookData && chapters.length > 0 && (
-        <div className="space-y-8">
-          {/* Book Metadata */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Project Overview Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Book Information</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Book className="h-5 w-5" />
+                Project Overview
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <strong>Author:</strong> {bookData.book_metadata?.author || 'AI Generated'}
+                  <strong>Title:</strong> {projectState.book_data?.title || 'Untitled'}
                 </div>
                 <div>
-                  <strong>Genre:</strong> {bookData.book_metadata?.genre || 'N/A'}
+                  <strong>Genre:</strong> {projectState.book_data?.genre || 'N/A'}
                 </div>
                 <div>
-                  <strong>Total Words:</strong> {bookData.book_metadata?.total_words?.toLocaleString() || '0'}
+                  <strong>Status:</strong> 
+                  <Badge className={`ml-2 ${getStatusColor(projectState.status)} border-0 text-xs`}>
+                    {projectState.status}
+                  </Badge>
                 </div>
                 <div>
-                  <strong>Total Images:</strong> {bookData.book_metadata?.total_images || '0'}
+                  <strong>Credits Used:</strong> {projectState.credits_used}
                 </div>
               </div>
+
+              {projectState.book_data?.concept && (
+                <div className="mt-4">
+                  <strong>Concept:</strong>
+                  <p className="text-muted-foreground mt-1">{projectState.book_data.concept}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Table of Contents */}
-          {bookData.table_of_contents && bookData.table_of_contents.length > 0 && (
+          {/* Progress Card for Active Generation */}
+          {projectState.status === 'processing' && (
             <Card>
               <CardHeader>
-                <CardTitle>Table of Contents</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  Generation in Progress
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {bookData.table_of_contents.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                      <span className="font-medium">Chapter {item.chapter_number}: {item.title}</span>
-                      <span className="text-sm text-muted-foreground">Page {item.page}</span>
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => {
+                      setSearchParams({ view: 'live' });
+                      setView('generator');
+                    }}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Watch Live Generation
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleAction('pause')}>
+                      <Pause className="h-4 w-4 mr-2" />
+                      Pause Generation
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your book is being generated. You can watch the progress live or check back later.
+                  </p>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Chapters */}
-          <div className="space-y-12">
-            {chapters.map((chapter, index) => (
-              <div key={chapter.chapter_number || index}>
-                <BookContentRenderer
-                  content={chapter.full_content || chapter.content}
-                  images={chapter.images || []}
-                  title={chapter.title}
-                  chapterNumber={chapter.chapter_number}
-                  wordCount={chapter.word_count || 0}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+          {/* Book Metadata Card */}
+          {bookData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Book Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <strong>Author:</strong> {bookData.book_metadata?.author || 'AI Generated'}
+                  </div>
+                  <div>
+                    <strong>Total Words:</strong> {bookData.book_metadata?.total_words?.toLocaleString() || '0'}
+                  </div>
+                  <div>
+                    <strong>Total Images:</strong> {bookData.book_metadata?.total_images || '0'}
+                  </div>
+                  <div>
+                    <strong>Total Pages:</strong> {bookData.book_metadata?.total_pages || '0'}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Empty State */}
-      {projectState.status === 'completed' && (!bookData || chapters.length === 0) && (
-        <div className="text-center py-20">
-          <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-          <h2 className="text-xl font-semibold mb-4">Book Content Not Available</h2>
-          <p className="text-muted-foreground mb-8">
-            The book generation is marked as complete, but the content couldn't be loaded.
-          </p>
-          <Button onClick={loadProjectState}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry Loading
-          </Button>
-        </div>
-      )}
+          {/* Generation Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Created</span>
+                  <span>{format(new Date(projectState.created_at), 'PPP p')}</span>
+                </div>
+                {projectState.started_at && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Generation Started</span>
+                    <span>{format(new Date(projectState.started_at), 'PPP p')}</span>
+                  </div>
+                )}
+                {projectState.completed_at && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Completed</span>
+                    <span>{format(new Date(projectState.completed_at), 'PPP p')}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="content" className="space-y-6">
+          {bookData && chapters.length > 0 ? (
+            <div className="space-y-8">
+              {/* Table of Contents */}
+              {bookData.table_of_contents && bookData.table_of_contents.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Table of Contents</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {bookData.table_of_contents.map((item, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                          <span className="font-medium">Chapter {item.chapter_number}: {item.title}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {item.word_count && `${item.word_count} words`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Chapters */}
+              <div className="space-y-12">
+                {chapters.map((chapter, index) => (
+                  <div key={chapter.chapter_number || index}>
+                    <BookContentRenderer
+                      content={chapter.full_content || chapter.content}
+                      images={chapter.images || []}
+                      title={chapter.title}
+                      chapterNumber={chapter.chapter_number}
+                      wordCount={chapter.word_count || 0}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+              <h2 className="text-xl font-semibold mb-4">Book Content Not Available</h2>
+              <p className="text-muted-foreground mb-8">
+                {projectState.status === 'completed' 
+                  ? "The book generation is complete, but content couldn't be loaded."
+                  : "Book content will be available once generation is complete."
+                }
+              </p>
+              {projectState.status === 'completed' && (
+                <Button onClick={loadProjectState}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry Loading
+                </Button>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="details" className="space-y-6">
+          {/* Detailed Project Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Technical Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <strong>Project ID:</strong> {projectState.usage_id}
+                </div>
+                <div>
+                  <strong>Project Type:</strong> {projectState.project_type}
+                </div>
+                {projectState.error_message && (
+                  <div>
+                    <strong>Error Message:</strong>
+                    <p className="text-red-600 mt-1">{projectState.error_message}</p>
+                  </div>
+                )}
+                {bookData?.generation_info && (
+                  <div>
+                    <strong>Generation Info:</strong>
+                    <pre className="bg-muted p-2 rounded mt-1 text-xs overflow-auto">
+                      {JSON.stringify(bookData.generation_info, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Storage Information */}
+          {bookData?.storage_info && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Storage Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Stored At:</span>
+                    <span>{bookData.storage_info.stored_at}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Total Size:</span>
+                    <span>{(bookData.storage_info.total_size / 1024).toFixed(2)} KB</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Has PDF:</span>
+                    <span>{bookData.storage_info.has_pdf ? 'Yes' : 'No'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Has Full Content:</span>
+                    <span>{bookData.storage_info.has_full_content ? 'Yes' : 'No'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Pending/Failed States */}
-      {(projectState.status === 'pending' || projectState.status === 'failed') && (
+      {(projectState.status === 'pending' || projectState.status === 'failed' || projectState.status === 'cancelled') && activeTab === 'overview' && (
         <div className="text-center py-20">
           {projectState.status === 'pending' ? (
             <>
@@ -523,16 +693,44 @@ const BookProjectViewer: React.FC = () => {
                 Resume Generation
               </Button>
             </>
+          ) : projectState.status === 'cancelled' ? (
+            <>
+              <X className="h-16 w-16 text-gray-500 mx-auto mb-6" />
+              <h2 className="text-xl font-semibold mb-4">Generation Cancelled</h2>
+              <p className="text-muted-foreground mb-8">
+                This book generation was cancelled. You can create a new book or duplicate the settings.
+              </p>
+              <div className="space-x-2">
+                <Button onClick={() => handleAction('duplicate')}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicate Settings
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/text/long-form-book')}>
+                  Create New Book
+                </Button>
+              </div>
+            </>
           ) : (
             <>
               <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-6" />
               <h2 className="text-xl font-semibold mb-4">Generation Failed</h2>
-              <p className="text-muted-foreground mb-8">
-                Something went wrong during generation. You can try creating a new book.
+              <p className="text-muted-foreground mb-4">
+                Something went wrong during generation.
               </p>
-              <Button onClick={() => navigate('/text/long-form-book')}>
-                Create New Book
-              </Button>
+              {projectState.error_message && (
+                <p className="text-sm text-red-600 mb-8">
+                  Error: {projectState.error_message}
+                </p>
+              )}
+              <div className="space-x-2">
+                <Button onClick={() => handleAction('duplicate')}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Try Again with Same Settings
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/text/long-form-book')}>
+                  Create New Book
+                </Button>
+              </div>
             </>
           )}
         </div>
